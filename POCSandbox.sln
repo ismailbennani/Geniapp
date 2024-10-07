@@ -1,0 +1,35 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Geniapp.Application", "Geniapp.Application\Geniapp.Application.csproj", "{DF3A33D5-78B8-41F1-A974-1174F1AE393B}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Geniapp.Master", "Geniapp.Master\Geniapp.Master.csproj", "{D17B7552-C3F4-4DAE-AB56-DA4DEEAB4874}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Application", "Application", "{AABA3E2F-EB2D-4D39-ABAF-B5E29515C63E}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Geniapp.Common", "Geniapp.Common\Geniapp.Common.csproj", "{A5D7719D-9DF4-46A4-BED1-625FD9314F69}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{DF3A33D5-78B8-41F1-A974-1174F1AE393B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{DF3A33D5-78B8-41F1-A974-1174F1AE393B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{DF3A33D5-78B8-41F1-A974-1174F1AE393B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{DF3A33D5-78B8-41F1-A974-1174F1AE393B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D17B7552-C3F4-4DAE-AB56-DA4DEEAB4874}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D17B7552-C3F4-4DAE-AB56-DA4DEEAB4874}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D17B7552-C3F4-4DAE-AB56-DA4DEEAB4874}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D17B7552-C3F4-4DAE-AB56-DA4DEEAB4874}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A5D7719D-9DF4-46A4-BED1-625FD9314F69}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A5D7719D-9DF4-46A4-BED1-625FD9314F69}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A5D7719D-9DF4-46A4-BED1-625FD9314F69}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A5D7719D-9DF4-46A4-BED1-625FD9314F69}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{DF3A33D5-78B8-41F1-A974-1174F1AE393B} = {AABA3E2F-EB2D-4D39-ABAF-B5E29515C63E}
+		{D17B7552-C3F4-4DAE-AB56-DA4DEEAB4874} = {AABA3E2F-EB2D-4D39-ABAF-B5E29515C63E}
+		{A5D7719D-9DF4-46A4-BED1-625FD9314F69} = {AABA3E2F-EB2D-4D39-ABAF-B5E29515C63E}
+	EndGlobalSection
+EndGlobal

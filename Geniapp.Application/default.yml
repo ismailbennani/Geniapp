@@ -1,0 +1,12 @@
+﻿masterConnectionString: Host=127.0.0.1;Persist Security Info=True;Username=POCSandbox_admin;Password=123456;Database=POCSandbox_Master
+shards:
+  - name: Shard_1
+    connectionString: Host=127.0.0.1;Persist Security Info=True;Username=POCSandbox_admin;Password=123456;Database=POCSandbox_Shard1
+  - name: Shard_2
+    connectionString: Host=127.0.0.1;Persist Security Info=True;Username=POCSandbox_admin;Password=123456;Database=POCSandbox_Shard2
+master:
+  port: 61298
+worker:
+  enabled: true
+frontend:
+  enabled: true

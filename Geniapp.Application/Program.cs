@@ -1,0 +1,57 @@
+﻿using CommandLine;
+using Geniapp.Application.Configuration;
+using Geniapp.Master;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+using Serilog;
+using YamlDotNet.Serialization;
+using YamlDotNet.Serialization.NamingConventions;
+
+await Parser.Default.ParseArguments<RunArguments>(args).WithParsedAsync(StartAsync);
+
+return;
+
+async Task StartAsync(RunArguments runArgs)
+{
+    Log.Logger = new LoggerConfiguration().WriteTo.Console().CreateLogger();
+
+    try
+    {
+        AgentConfiguration configuration = ParseConfiguration(runArgs.ConfigurationFile);
+        Log.Logger.Information("Found configuration: {Configuration}", configuration);
+
+        HostApplicationBuilder builder = Host.CreateApplicationBuilder(args);
+
+        if (configuration.Master?.Enabled == true)
+        {
+            Log.Logger.Information("Master mode enabled.");
+            builder.Services.AddHostedService<MasterWorker>(_ => new MasterWorker(configuration.Master));
+        }
+
+        IHost host = builder.Build();
+
+        await host.RunAsync();
+    }
+    catch (Exception ex)
+    {
+        Log.Fatal(ex, "Application terminated unexpectedly.");
+    }
+    finally
+    {
+        await Log.CloseAndFlushAsync();
+    }
+}
+
+AgentConfiguration ParseConfiguration(string path)
+{
+    IDeserializer deserializer = new DeserializerBuilder().WithNamingConvention(CamelCaseNamingConvention.Instance).Build();
+    using FileStream file = File.OpenRead(path);
+    using StreamReader reader = new(file);
+    return deserializer.Deserialize<AgentConfiguration>(reader);
+}
+
+class RunArguments
+{
+    [Value(0, MetaName = "CONFIG", Default = "config.yml", HelpText = "The path to the configuration file.")]
+    public string ConfigurationFile { get; set; } = "config.yml";
+}
