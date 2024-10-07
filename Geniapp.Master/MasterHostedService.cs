@@ -1,5 +1,6 @@
 ﻿using System.Text.Json;
 using System.Text.Json.Serialization;
+using Geniapp.Infrastructure.Database;
 using Geniapp.Master.Services;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -10,22 +11,22 @@ using Serilog;
 
 namespace Geniapp.Master;
 
-public class MasterWorker : IHostedService
+public class MasterHostedService : IHostedService
 {
     readonly MasterConfiguration _configuration;
     WebApplication? _app;
 
-    public MasterWorker(MasterConfiguration configuration)
+    public MasterHostedService(MasterConfiguration configuration)
     {
         _configuration = configuration;
     }
 
     public async Task StartAsync(CancellationToken cancellationToken)
     {
-        Log.Logger = new LoggerConfiguration().WriteTo.Console().CreateLogger();
-
         try
         {
+            Guid serviceId = Guid.NewGuid();
+
             WebApplicationBuilder builder = WebApplication.CreateBuilder();
 
             builder.WebHost.UseUrls($"http://localhost:{_configuration.Port}");
@@ -43,7 +44,7 @@ public class MasterWorker : IHostedService
                     m =>
                     {
                         m.ApplicationParts.Clear();
-                        m.ApplicationParts.Add(new AssemblyPart(typeof(MasterWorker).Assembly));
+                        m.ApplicationParts.Add(new AssemblyPart(typeof(MasterHostedService).Assembly));
                     }
                 );
             builder.Services.AddEndpointsApiExplorer();
@@ -59,6 +60,8 @@ public class MasterWorker : IHostedService
             builder.Services.AddSingleton<FrontendsService>();
             builder.Services.AddSingleton<WorkersService>();
 
+            builder.Services.ConfigureSharding(_configuration.MasterConnectionString, _configuration.Shards);
+
             _app = builder.Build();
 
             _app.UseOpenApi();
@@ -67,14 +70,12 @@ public class MasterWorker : IHostedService
             _app.MapDefaultControllerRoute();
 
             await _app.StartAsync(cancellationToken);
+
+            Log.Logger.Information("Master service {ServiceId} started.", serviceId);
         }
         catch (Exception ex)
         {
-            Log.Fatal(ex, "Application terminated unexpectedly");
-        }
-        finally
-        {
-            await Log.CloseAndFlushAsync();
+            Log.Fatal(ex, "Failed to start master service.");
         }
     }
 

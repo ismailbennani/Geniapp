@@ -1,6 +1,6 @@
 ﻿namespace Geniapp.Application.Configuration;
 
-class WorkerConfiguration
+class AgentWorkerConfiguration
 {
     /// <summary>
     ///     Is worker mode enabled?

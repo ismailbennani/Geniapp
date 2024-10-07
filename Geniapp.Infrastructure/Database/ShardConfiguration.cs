@@ -1,6 +1,6 @@
-﻿namespace Geniapp.Application.Configuration;
+﻿namespace Geniapp.Infrastructure.Database;
 
-class ShardConfiguration
+public class ShardConfiguration
 {
     public required string Name { get; set; }
     public required string ConnectionString { get; set; }

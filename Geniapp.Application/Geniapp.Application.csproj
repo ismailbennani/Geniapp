@@ -22,7 +22,10 @@
     </ItemGroup>
 
     <ItemGroup>
+      <ProjectReference Include="..\Geniapp.Frontend\Geniapp.Frontend.csproj" />
+      <ProjectReference Include="..\Geniapp.Infrastructure\Geniapp.Infrastructure.csproj" />
       <ProjectReference Include="..\Geniapp.Master\Geniapp.Master.csproj" />
+      <ProjectReference Include="..\Geniapp.Worker\Geniapp.Worker.csproj" />
     </ItemGroup>
 
 </Project>

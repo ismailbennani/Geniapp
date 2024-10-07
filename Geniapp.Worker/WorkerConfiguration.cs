@@ -1,8 +1,8 @@
 ﻿using Geniapp.Infrastructure.Database;
 
-namespace Geniapp.Master;
+namespace Geniapp.Worker;
 
-public class MasterConfiguration
+public class WorkerConfiguration
 {
     /// <summary>
     ///     The connection strings to the master database.
@@ -13,9 +13,4 @@ public class MasterConfiguration
     ///     The connection strings to the shards
     /// </summary>
     public ShardConfiguration[] Shards { get; set; } = [];
-
-    /// <summary>
-    ///     The port to use for the admin API server.
-    /// </summary>
-    public int Port { get; set; }
 }

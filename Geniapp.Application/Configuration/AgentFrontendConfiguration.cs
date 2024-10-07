@@ -1,6 +1,6 @@
 ﻿namespace Geniapp.Application.Configuration;
 
-class FrontendConfiguration
+class AgentFrontendConfiguration
 {
     /// <summary>
     ///     Is frontend mode enabled.

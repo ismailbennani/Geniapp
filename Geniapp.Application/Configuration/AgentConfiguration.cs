@@ -1,4 +1,4 @@
-﻿using Geniapp.Master;
+﻿using Geniapp.Infrastructure.Database;
 
 namespace Geniapp.Application.Configuration;
 
@@ -14,7 +14,7 @@ class AgentConfiguration
     /// </summary>
     public ShardConfiguration[] Shards { get; set; } = [];
 
-    public MasterConfiguration? Master { get; set; }
-    public WorkerConfiguration? Worker { get; set; }
-    public FrontendConfiguration? Frontend { get; set; }
+    public AgentMasterConfiguration? Master { get; set; }
+    public AgentWorkerConfiguration? Worker { get; set; }
+    public AgentFrontendConfiguration? Frontend { get; set; }
 }

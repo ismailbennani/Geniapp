@@ -1,6 +1,9 @@
 ﻿using CommandLine;
+using Geniapp.Application;
 using Geniapp.Application.Configuration;
+using Geniapp.Frontend;
 using Geniapp.Master;
+using Geniapp.Worker;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Serilog;
@@ -22,10 +25,49 @@ async Task StartAsync(RunArguments runArgs)
 
         HostApplicationBuilder builder = Host.CreateApplicationBuilder(args);
 
+        builder.Services.AddSerilog();
+
         if (configuration.Master?.Enabled == true)
         {
-            Log.Logger.Information("Master mode enabled.");
-            builder.Services.AddHostedService<MasterWorker>(_ => new MasterWorker(configuration.Master));
+            Log.Logger.Information("Master service enabled.");
+            builder.Services.AddHostedService<MasterHostedService>(
+                _ => new MasterHostedService(
+                    new MasterConfiguration
+                    {
+                        MasterConnectionString = configuration.MasterConnectionString,
+                        Shards = configuration.Shards,
+                        Port = configuration.Master.Port
+                    }
+                )
+            );
+        }
+
+        if (configuration.Worker?.Enabled == true)
+        {
+            Log.Logger.Information("Worker service enabled.");
+            builder.Services.AddHostedService<WorkerHostedService>(
+                _ => new WorkerHostedService(
+                    new WorkerConfiguration
+                    {
+                        MasterConnectionString = configuration.MasterConnectionString,
+                        Shards = configuration.Shards
+                    }
+                )
+            );
+        }
+
+        if (configuration.Frontend?.Enabled == true)
+        {
+            Log.Logger.Information("Frontend service enabled.");
+            builder.Services.AddHostedService<FrontendHostedService>(
+                _ => new FrontendHostedService(
+                    new FrontendConfiguration
+                    {
+                        MasterConnectionString = configuration.MasterConnectionString,
+                        Shards = configuration.Shards
+                    }
+                )
+            );
         }
 
         IHost host = builder.Build();
@@ -50,8 +92,11 @@ AgentConfiguration ParseConfiguration(string path)
     return deserializer.Deserialize<AgentConfiguration>(reader);
 }
 
-class RunArguments
+namespace Geniapp.Application
 {
-    [Value(0, MetaName = "CONFIG", Default = "config.yml", HelpText = "The path to the configuration file.")]
-    public string ConfigurationFile { get; set; } = "config.yml";
+    class RunArguments
+    {
+        [Value(0, MetaName = "CONFIG", Default = "config.yml", HelpText = "The path to the configuration file.")]
+        public string ConfigurationFile { get; set; } = "config.yml";
+    }
 }
