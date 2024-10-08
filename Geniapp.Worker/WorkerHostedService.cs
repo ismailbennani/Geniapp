@@ -22,11 +22,13 @@ public class WorkerHostedService : IHostedService
         try
         {
             Guid serviceId = Guid.NewGuid();
+            CurrentWorkerInformation currentWorkerInformation = new() { ServiceId = serviceId };
 
             HostApplicationBuilder builder = Host.CreateApplicationBuilder();
 
             builder.Services.AddSerilog();
-            builder.Services.AddOptions();
+
+            builder.Services.AddSingleton(currentWorkerInformation);
 
             builder.Services.AddHostedService<WorkHostedService>();
 
