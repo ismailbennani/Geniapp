@@ -7,6 +7,7 @@ using Geniapp.Worker;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Serilog;
+using Serilog.Events;
 using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.NamingConventions;
 
@@ -16,7 +17,7 @@ return;
 
 async Task StartAsync(RunArguments runArgs)
 {
-    Log.Logger = new LoggerConfiguration().WriteTo.Console().CreateLogger();
+    Log.Logger = new LoggerConfiguration().WriteTo.Console().CreateBootstrapLogger();
 
     try
     {
@@ -25,7 +26,7 @@ async Task StartAsync(RunArguments runArgs)
 
         HostApplicationBuilder builder = Host.CreateApplicationBuilder(args);
 
-        builder.Services.AddSerilog();
+        builder.Services.AddSerilog(c => c.WriteTo.Console().MinimumLevel.Is(runArgs.Verbose ? LogEventLevel.Debug : LogEventLevel.Information));
 
         if (configuration.Master?.Enabled == true)
         {
@@ -104,5 +105,8 @@ namespace Geniapp.Application
     {
         [Value(0, MetaName = "CONFIG", Default = "config.yml", HelpText = "The path to the configuration file.")]
         public string ConfigurationFile { get; set; } = "config.yml";
+
+        [Option('v', "verbose", Default = false, HelpText = "Print additional information.")]
+        public bool Verbose { get; set; } = false;
     }
 }
