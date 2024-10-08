@@ -4,7 +4,7 @@ namespace Geniapp.Infrastructure.Database.MasterDatabase;
 
 public class MasterDbContext : DbContext
 {
-    public MasterDbContext(DbContextOptions options) : base(options)
+    public MasterDbContext(DbContextOptions<MasterDbContext> options) : base(options)
     {
     }
 

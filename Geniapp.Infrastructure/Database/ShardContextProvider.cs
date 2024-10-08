@@ -1,6 +1,5 @@
 ﻿using Geniapp.Infrastructure.Database.MasterDatabase;
 using Geniapp.Infrastructure.Database.ShardDatabase;
-using Microsoft.EntityFrameworkCore;
 
 namespace Geniapp.Infrastructure.Database;
 
@@ -20,6 +19,6 @@ public class ShardContextProvider(FindShardOfTenant findShardOfTenant, ShardConf
             return null;
         }
 
-        return new ShardDbContext(configuration.ConnectionString, new DbContextOptions<ShardDbContext>());
+        return new ShardDbContext(configuration.ConnectionString);
     }
 }

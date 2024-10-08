@@ -5,6 +5,11 @@ namespace Geniapp.Infrastructure.Database.MasterDatabase;
 
 public class Shard
 {
+#pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
+    // for EFC
+    Shard() { }
+#pragma warning restore CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
+
     public Shard(string name)
     {
         Name = name;

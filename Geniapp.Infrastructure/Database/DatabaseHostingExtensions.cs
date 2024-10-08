@@ -13,7 +13,7 @@ public static class DatabaseHostingExtensions
         ShardConfigurations configuration = new(shards);
         services.AddSingleton(configuration);
 
-        services.AddSingleton<FindShardOfTenant>();
-        services.AddSingleton<ShardContextProvider>();
+        services.AddScoped<FindShardOfTenant>();
+        services.AddScoped<ShardContextProvider>();
     }
 }

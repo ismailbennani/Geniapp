@@ -5,6 +5,11 @@ namespace Geniapp.Infrastructure.Database.MasterDatabase;
 
 public class TenantShardAssociation
 {
+#pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
+    // for EFC
+    TenantShardAssociation() { }
+#pragma warning restore CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
+
     public TenantShardAssociation(Guid tenantId, Shard? shard)
     {
         TenantId = tenantId;
