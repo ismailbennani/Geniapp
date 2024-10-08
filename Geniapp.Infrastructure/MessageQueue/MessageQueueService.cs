@@ -13,7 +13,6 @@ public class MessageQueueService : IDisposable
     IModel? _channel;
     readonly HashSet<string> _declaredQueues = [];
     readonly Dictionary<string, EventingBasicConsumer> _consumers = [];
-    readonly HashSet<string> _consumedQueues = [];
 
     public MessageQueueService(MessageQueueConfiguration configuration, ILogger<MessageQueueService> logger)
     {
@@ -57,14 +56,6 @@ public class MessageQueueService : IDisposable
         }
 
         registeredConsumer.Received += (_, args) => consumer(channel, args);
-    }
-
-    public void Reconnect()
-    {
-        _connection?.Dispose();
-        _channel?.Dispose();
-        _declaredQueues.Clear();
-        _consumedQueues.Clear();
     }
 
     IConnection GetConnection() => _connection ??= _factory.CreateConnection();
