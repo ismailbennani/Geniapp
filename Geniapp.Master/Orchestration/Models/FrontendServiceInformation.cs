@@ -1,4 +1,4 @@
-﻿namespace Geniapp.Master.Models;
+﻿namespace Geniapp.Master.Orchestration.Models;
 
 public class FrontendServiceInformation
 {

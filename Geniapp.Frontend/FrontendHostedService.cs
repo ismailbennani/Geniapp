@@ -25,6 +25,7 @@ public class FrontendHostedService : IHostedService
             WebApplicationBuilder builder = WebApplication.CreateBuilder();
 
             builder.Services.AddSerilog();
+            builder.Services.AddOptions();
             builder.Services.AddServerSideBlazor(opt => opt.DetailedErrors = true);
 
             builder.Services.ConfigureSharding(_configuration.MasterConnectionString, _configuration.Shards);

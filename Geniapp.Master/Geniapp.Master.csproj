@@ -19,4 +19,8 @@
       <ProjectReference Include="..\Geniapp.Infrastructure\Geniapp.Infrastructure.csproj" />
     </ItemGroup>
 
+    <ItemGroup>
+      <Folder Include="Orchestration\" />
+    </ItemGroup>
+
 </Project>

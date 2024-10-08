@@ -1,4 +1,4 @@
-﻿namespace Geniapp.Master.Controllers.Requests;
+﻿namespace Geniapp.Master.Orchestration.Controllers.Requests;
 
 public class RegisterFrontendServiceRequest
 {

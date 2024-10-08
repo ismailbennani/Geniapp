@@ -36,7 +36,9 @@ async Task StartAsync(RunArguments runArgs)
                     {
                         MasterConnectionString = configuration.MasterConnectionString,
                         Shards = configuration.Shards,
-                        Port = configuration.Master.Port
+                        MessageQueue = configuration.MessageQueue,
+                        Port = configuration.Master.Port,
+                        Work = configuration.Master.Work
                     }
                 )
             );
@@ -50,7 +52,8 @@ async Task StartAsync(RunArguments runArgs)
                     new WorkerConfiguration
                     {
                         MasterConnectionString = configuration.MasterConnectionString,
-                        Shards = configuration.Shards
+                        Shards = configuration.Shards,
+                        MessageQueue = configuration.MessageQueue
                     }
                 )
             );
@@ -64,7 +67,8 @@ async Task StartAsync(RunArguments runArgs)
                     new FrontendConfiguration
                     {
                         MasterConnectionString = configuration.MasterConnectionString,
-                        Shards = configuration.Shards
+                        Shards = configuration.Shards,
+                        MessageQueue = configuration.MessageQueue
                     }
                 )
             );

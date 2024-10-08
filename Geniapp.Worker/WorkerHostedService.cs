@@ -1,4 +1,7 @@
 ﻿using Geniapp.Infrastructure.Database;
+using Geniapp.Infrastructure.MessageQueue;
+using Geniapp.Worker.Work;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Serilog;
 
@@ -23,7 +26,12 @@ public class WorkerHostedService : IHostedService
             HostApplicationBuilder builder = Host.CreateApplicationBuilder();
 
             builder.Services.AddSerilog();
+            builder.Services.AddOptions();
+
+            builder.Services.AddHostedService<WorkHostedService>();
+
             builder.Services.ConfigureSharding(_configuration.MasterConnectionString, _configuration.Shards);
+            builder.Services.ConfigureMessageQueue(_configuration.MessageQueue);
 
             _host = builder.Build();
 

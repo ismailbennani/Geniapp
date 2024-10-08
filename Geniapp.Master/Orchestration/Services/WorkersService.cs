@@ -1,7 +1,7 @@
 ﻿using System.Collections.Concurrent;
-using Geniapp.Master.Models;
+using Geniapp.Master.Orchestration.Models;
 
-namespace Geniapp.Master.Services;
+namespace Geniapp.Master.Orchestration.Services;
 
 public class WorkersService
 {

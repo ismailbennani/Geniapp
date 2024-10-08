@@ -1,9 +1,9 @@
 ﻿using Geniapp.Infrastructure.Database;
 using Geniapp.Infrastructure.MessageQueue;
 
-namespace Geniapp.Application.Configuration;
+namespace Geniapp.Infrastructure;
 
-class AgentConfiguration
+public class SharedConfiguration
 {
     /// <summary>
     ///     The connection strings to the master database.
@@ -11,7 +11,7 @@ class AgentConfiguration
     public required string MasterConnectionString { get; set; }
 
     /// <summary>
-    ///     The connection strings to the shards.
+    ///     The connection strings to the shards
     /// </summary>
     public ShardConfiguration[] Shards { get; set; } = [];
 
@@ -19,8 +19,4 @@ class AgentConfiguration
     ///     The message queue to use.
     /// </summary>
     public MessageQueueConfiguration MessageQueue { get; set; } = new();
-
-    public AgentMasterConfiguration? Master { get; set; }
-    public AgentWorkerConfiguration? Worker { get; set; }
-    public AgentFrontendConfiguration? Frontend { get; set; }
 }
