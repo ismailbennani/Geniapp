@@ -1,11 +1,18 @@
-﻿using Geniapp.Infrastructure.MessageQueue;
+﻿using Geniapp.Infrastructure.Database.MasterDatabase;
+using Geniapp.Infrastructure.MessageQueue;
 using Geniapp.Infrastructure.Work;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
 namespace Geniapp.Master.Work;
 
-public class PublishWorkHostedService(MessageQueueAdapter adapter, PublishWorkConfiguration configuration, ILogger<PublishWorkHostedService> logger) : IHostedService
+public class PublishWorkHostedService(
+    MessageQueueAdapter adapter,
+    PublishWorkConfiguration configuration,
+    MasterDbContext masterDbContext,
+    ILogger<PublishWorkHostedService> logger
+) : IHostedService
 {
     Timer? _timer;
 
@@ -21,7 +28,17 @@ public class PublishWorkHostedService(MessageQueueAdapter adapter, PublishWorkCo
     {
         try
         {
-            WorkItem workItem = new() { TenantId = Guid.NewGuid() };
+            int tenantsCount = masterDbContext.TenantShardAssociations.AsNoTracking().Count();
+            int randomTenant = Random.Shared.Next(tenantsCount);
+            TenantShardAssociation? tenantShardAssociation = masterDbContext.TenantShardAssociations.AsNoTracking().Skip(randomTenant).Take(1).FirstOrDefault();
+
+            if (tenantShardAssociation == null)
+            {
+                logger.LogInformation("No tenant found, no work to publish.");
+                return;
+            }
+
+            WorkItem workItem = new() { TenantId = tenantShardAssociation.TenantId };
             adapter.PublishWork(workItem);
         }
         catch (Exception exn)
