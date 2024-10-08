@@ -13,6 +13,8 @@ public class MessageQueueAdapter(MessageQueueService messageQueueService, ILogge
 
     const string WorkQueueName = "work";
 
+    public MessageQueueInformation GetInformation() => messageQueueService.GetQueueInformation(WorkQueueName);
+
     public void PublishWork(WorkItem work)
     {
         string workStr = JsonSerializer.Serialize(work, _jsonSerializerOptions);
@@ -37,7 +39,7 @@ public class MessageQueueAdapter(MessageQueueService messageQueueService, ILogge
                 return;
             }
 
-            MessageToProcess<WorkItem> message = new MessageToProcess<WorkItem>(channel, args, work);
+            MessageToProcess<WorkItem> message = new(channel, args, work);
             callback(message);
         }
     }

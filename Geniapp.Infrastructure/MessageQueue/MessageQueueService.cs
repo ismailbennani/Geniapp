@@ -20,6 +20,8 @@ public class MessageQueueService : IDisposable
         _factory = new ConnectionFactory { HostName = configuration.HostName };
     }
 
+    public MessageQueueInformation GetQueueInformation(string queueName) => MessageQueueInformation.Get(GetChannel(), queueName);
+
     public void PublishMessage(string queueName, byte[] message)
     {
         IModel channel = GetChannel();
@@ -65,7 +67,6 @@ public class MessageQueueService : IDisposable
         if (_channel == null)
         {
             _channel = GetConnection().CreateModel();
-            _channel.ConfirmSelect();
         }
         return _channel;
     }

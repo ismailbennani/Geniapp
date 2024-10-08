@@ -5,7 +5,7 @@ using NSwag.Annotations;
 
 namespace Geniapp.Master.Orchestration.Controllers;
 
-[Route("/admin/services")]
+[Route("/api/admin/services")]
 [OpenApiTag("Services")]
 [ApiController]
 public class ServicesController : ControllerBase
