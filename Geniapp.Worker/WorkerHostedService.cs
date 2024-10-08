@@ -28,6 +28,7 @@ public class WorkerHostedService : IHostedService
 
             builder.Services.AddSerilog();
 
+            builder.Services.AddSingleton(_configuration);
             builder.Services.AddSingleton(currentWorkerInformation);
 
             builder.Services.AddHostedService<WorkHostedService>();

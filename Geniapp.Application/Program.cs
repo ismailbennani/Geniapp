@@ -53,7 +53,9 @@ async Task StartAsync(RunArguments runArgs)
                     {
                         MasterConnectionString = configuration.MasterConnectionString,
                         Shards = configuration.Shards,
-                        MessageQueue = configuration.MessageQueue
+                        MessageQueue = configuration.MessageQueue,
+                        MinWorkDurationInSeconds = configuration.Worker.MinWorkDurationInSeconds,
+                        MaxWorkDurationInSeconds = configuration.Worker.MaxWorkDurationInSeconds
                     }
                 )
             );

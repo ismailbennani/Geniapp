@@ -5,7 +5,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Geniapp.Worker.Work;
 
-public class WorkHostedService(MessageQueueAdapter adapter, ILogger<WorkerHostedService> logger) : IHostedService
+public class WorkHostedService(MessageQueueAdapter adapter, WorkerConfiguration configuration, ILogger<WorkerHostedService> logger) : IHostedService
 {
     readonly Queue<WorkItem> _work = [];
 
@@ -38,8 +38,12 @@ public class WorkHostedService(MessageQueueAdapter adapter, ILogger<WorkerHosted
     async Task DoWorkAsync(WorkItem obj)
     {
         logger.LogInformation("Executing work on tenant {TenantId}...", obj.TenantId);
-        double delay = Random.Shared.NextDouble();
+
+        double delay = Random.Shared.NextDouble() * (configuration.MaxWorkDurationInSeconds - configuration.MinWorkDurationInSeconds) + configuration.MinWorkDurationInSeconds;
+        logger.LogDebug("Work on tenant {TenantId} will take {Delay} seconds.", obj.TenantId, delay);
+
         await Task.Delay(TimeSpan.FromSeconds(delay));
+
         logger.LogInformation("Work on tenant {TenantId} done.", obj.TenantId);
     }
 }
