@@ -3,8 +3,10 @@ using CommandLine;
 using Geniapp.Application;
 using Geniapp.Application.Configuration;
 using Geniapp.Frontend;
+using Geniapp.Infrastructure.Database;
 using Geniapp.Master;
 using Geniapp.Worker;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Serilog;
@@ -12,7 +14,17 @@ using Serilog.Events;
 using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.NamingConventions;
 
-await Parser.Default.ParseArguments<RunArguments>(args).WithParsedAsync(StartAsync);
+if (EF.IsDesignTime)
+{
+    HostApplicationBuilder builder = Host.CreateApplicationBuilder(args);
+    builder.Services.ConfigureSharding("MASTER_CONNECTION_STRING", [new ShardConfiguration { Name = "SHARD", ConnectionString = "SHARD_CONNECTION_STRING" }]);
+    IHost app = builder.Build();
+    await app.StartAsync();
+}
+else
+{
+    await Parser.Default.ParseArguments<RunArguments>(args).WithParsedAsync(StartAsync);
+}
 
 return;
 
@@ -22,14 +34,14 @@ async Task StartAsync(RunArguments runArgs)
 
     try
     {
-        AgentConfiguration configuration = ParseConfiguration(runArgs.ConfigurationFile);
+        AgentConfiguration? configuration = ParseConfiguration(runArgs.ConfigurationFile);
         Log.Logger.Information("Found configuration: {Configuration}", JsonSerializer.Serialize(configuration, new JsonSerializerOptions { WriteIndented = true }));
 
         HostApplicationBuilder builder = Host.CreateApplicationBuilder(args);
 
         builder.Services.AddSerilog(c => c.WriteTo.Console().MinimumLevel.Is(runArgs.Verbose ? LogEventLevel.Debug : LogEventLevel.Information));
 
-        if (configuration.Master?.Enabled == true)
+        if (configuration?.Master?.Enabled == true)
         {
             Log.Logger.Information("Master service enabled.");
             builder.Services.AddHostedService<MasterHostedService>(
@@ -46,7 +58,7 @@ async Task StartAsync(RunArguments runArgs)
             );
         }
 
-        if (configuration.Worker?.Enabled == true)
+        if (configuration?.Worker?.Enabled == true)
         {
             Log.Logger.Information("Worker service enabled.");
             builder.Services.AddHostedService<WorkerHostedService>(
@@ -63,7 +75,7 @@ async Task StartAsync(RunArguments runArgs)
             );
         }
 
-        if (configuration.Frontend?.Enabled == true)
+        if (configuration?.Frontend?.Enabled == true)
         {
             Log.Logger.Information("Frontend service enabled.");
             builder.Services.AddHostedService<FrontendHostedService>(
@@ -92,8 +104,13 @@ async Task StartAsync(RunArguments runArgs)
     }
 }
 
-AgentConfiguration ParseConfiguration(string path)
+AgentConfiguration? ParseConfiguration(string path)
 {
+    if (!File.Exists(path))
+    {
+        return null;
+    }
+
     IDeserializer deserializer = new DeserializerBuilder().WithNamingConvention(CamelCaseNamingConvention.Instance).Build();
     using FileStream file = File.OpenRead(path);
     using StreamReader reader = new(file);
