@@ -56,7 +56,7 @@ public class WorkHostedService(
 
             await Task.Delay(TimeSpan.FromSeconds(delay), cancellationToken);
 
-            ShardDbContext? context = await shardContextProvider.GetShardContext(obj.Body.TenantId);
+            ShardDbContext? context = await shardContextProvider.GetShardContextOfTenant(obj.Body.TenantId);
             if (context != null)
             {
                 TenantData? tenant = await context.TenantsData.SingleOrDefaultAsync(d => d.Tenant.Id == obj.Body.TenantId, cancellationToken);

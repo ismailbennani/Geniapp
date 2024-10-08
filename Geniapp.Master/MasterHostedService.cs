@@ -6,6 +6,7 @@ using Geniapp.Master.Orchestration.Services;
 using Geniapp.Master.Work;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc.ApplicationParts;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -33,7 +34,6 @@ public class MasterHostedService : IHostedService
 
             builder.WebHost.UseUrls($"http://localhost:{_configuration.Port}");
             builder.Services.AddSerilog();
-            builder.Services.AddOptions();
 
             builder.Services.AddControllers()
                 .AddJsonOptions(
@@ -55,7 +55,7 @@ public class MasterHostedService : IHostedService
             builder.Services.AddOpenApiDocument(
                 opt =>
                 {
-                    opt.Title = "POC Sandbox - Master";
+                    opt.Title = "Geniapp - Master";
                     opt.DocumentName = "master";
                 }
             );
@@ -75,6 +75,14 @@ public class MasterHostedService : IHostedService
             _app.UseOpenApi();
             _app.UseSwaggerUi();
 
+            _app.MapGet(
+                "/",
+                async request =>
+                {
+                    request.Response.StatusCode = 200;
+                    await request.Response.WriteAsync($"Master service: {serviceId}", cancellationToken);
+                }
+            );
             _app.MapDefaultControllerRoute();
 
             await _app.StartAsync(cancellationToken);

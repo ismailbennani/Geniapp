@@ -11,10 +11,10 @@ class AgentWorkerConfiguration
     /// <summary>
     ///     The minimal amount of time a worker should idle when performing work.
     /// </summary>
-    public double MinWorkDurationInSeconds { get; set; }
+    public double MinWorkDurationInSeconds { get; set; } = 0.5;
 
     /// <summary>
     ///     The maximal amount of time a worker should idle when performing work.
     /// </summary>
-    public double MaxWorkDurationInSeconds { get; set; }
+    public double MaxWorkDurationInSeconds { get; set; } = 2;
 }

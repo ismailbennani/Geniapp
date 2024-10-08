@@ -9,6 +9,7 @@ messageQueue:
 master:
   port: 61298
 worker:
-  enabled: true
+  minWorkDurationInSeconds: 0.5
+  maxWorkDurationInSeconds: 2
 frontend:
-  enabled: true
+  port: 61300

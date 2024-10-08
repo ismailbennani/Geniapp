@@ -84,7 +84,8 @@ async Task StartAsync(RunArguments runArgs)
                     {
                         MasterConnectionString = configuration.MasterConnectionString,
                         Shards = configuration.Shards,
-                        MessageQueue = configuration.MessageQueue
+                        MessageQueue = configuration.MessageQueue,
+                        Port = configuration.Frontend.Port
                     }
                 )
             );
