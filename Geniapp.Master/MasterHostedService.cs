@@ -85,6 +85,8 @@ public class MasterHostedService : IHostedService
             );
             _app.MapDefaultControllerRoute();
 
+            await _app.Services.RecreateShardsAsync();
+
             await _app.StartAsync(cancellationToken);
 
             Log.Logger.Information("Master service {ServiceId} started.", serviceId);
