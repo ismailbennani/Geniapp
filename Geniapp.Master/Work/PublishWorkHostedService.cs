@@ -17,16 +17,23 @@ public class PublishWorkHostedService(MessageQueueAdapter adapter, PublishWorkCo
 
     public async Task StopAsync(CancellationToken cancellationToken) => await StopTimerAsync();
 
-    void DoWork(object? _)
+    void PublishWork(object? _)
     {
-        WorkItem workItem = new() { TenantId = Guid.NewGuid() };
-        adapter.PublishWork(workItem);
+        try
+        {
+            WorkItem workItem = new() { TenantId = Guid.NewGuid() };
+            adapter.PublishWork(workItem);
+        }
+        catch (Exception exn)
+        {
+            logger.LogError(exn, "An unexpected exception occurred while publishing new work.");
+        }
     }
 
     void StartTimer()
     {
         double delay = configuration.DelayInSeconds;
-        _timer = new Timer(DoWork, null, TimeSpan.Zero, TimeSpan.FromSeconds(delay));
+        _timer = new Timer(PublishWork, null, TimeSpan.Zero, TimeSpan.FromSeconds(delay));
         logger.LogInformation("Started publishing work every {Seconds} seconds.", delay);
     }
 
