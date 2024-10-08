@@ -35,14 +35,14 @@ public class MessageQueueService : IDisposable
         _logger.LogDebug("Published message of length {Length} in queue {Queue}.", message.Length, queueName);
     }
 
-    public void RegisterConsumer(string queueName, Action<BasicDeliverEventArgs> consumer)
+    public void RegisterConsumer(string queueName, Action<IModel, BasicDeliverEventArgs> consumer)
     {
         IModel channel = GetChannel();
 
         if (!_declaredQueues.Contains(queueName))
         {
             channel.QueueDeclare(queueName, false, false, false, null);
-            channel.BasicQos(0, 1, false);
+            channel.BasicQos(0, 2, false);
             _declaredQueues.Add(queueName);
         }
 
@@ -52,11 +52,11 @@ public class MessageQueueService : IDisposable
 
             registeredConsumer = new EventingBasicConsumer(channel);
             registeredConsumer.Received += (_, args) => _logger.LogDebug("Received message of length {Length} in queue {Queue}.", args.Body.Length, queueName);
-            channel.BasicConsume(queueName, true, registeredConsumer);
+            channel.BasicConsume(queueName, false, registeredConsumer);
             _consumers[queueName] = registeredConsumer;
         }
 
-        registeredConsumer.Received += (_, args) => consumer(args);
+        registeredConsumer.Received += (_, args) => consumer(channel, args);
     }
 
     public void Reconnect()

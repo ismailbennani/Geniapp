@@ -5,45 +5,47 @@ using Microsoft.Extensions.Logging;
 
 namespace Geniapp.Worker.Work;
 
-public class WorkHostedService(MessageQueueAdapter adapter, WorkerConfiguration configuration, ILogger<WorkerHostedService> logger) : IHostedService
+public class WorkHostedService(MessageQueueAdapter adapter, WorkerConfiguration configuration, ILogger<WorkerHostedService> logger) : BackgroundService
 {
-    readonly Queue<WorkItem> _work = [];
+    readonly Queue<MessageToProcess<WorkItem>> _workQueue = [];
 
-    public async Task StartAsync(CancellationToken cancellationToken)
+    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
+        await Task.Delay(TimeSpan.FromSeconds(1), stoppingToken);
+
         adapter.SubscribeToWork(QueueWork);
 
-        while (!cancellationToken.IsCancellationRequested)
+        while (!stoppingToken.IsCancellationRequested)
         {
-            if (_work.Count == 0)
+            if (_workQueue.Count == 0)
             {
                 logger.LogInformation("No work available, will idle for 1 second.");
-                await Task.Delay(TimeSpan.FromSeconds(1), cancellationToken);
+                await Task.Delay(TimeSpan.FromSeconds(1), stoppingToken);
                 continue;
             }
 
-            WorkItem work = _work.Dequeue();
+            MessageToProcess<WorkItem> work = _workQueue.Dequeue();
             await DoWorkAsync(work);
         }
     }
 
-    public Task StopAsync(CancellationToken cancellationToken) => Task.CompletedTask;
-
-    void QueueWork(WorkItem obj)
+    void QueueWork(MessageToProcess<WorkItem> obj)
     {
-        _work.Enqueue(obj);
-        logger.LogInformation("Queued work for tenant {TenantId}.", obj.TenantId);
+        _workQueue.Enqueue(obj);
+        logger.LogInformation("Queued work for tenant {TenantId}.", obj.Body.TenantId);
     }
 
-    async Task DoWorkAsync(WorkItem obj)
+    async Task DoWorkAsync(MessageToProcess<WorkItem> obj)
     {
-        logger.LogInformation("Executing work on tenant {TenantId}...", obj.TenantId);
+        logger.LogInformation("Executing work on tenant {TenantId}...", obj.Body.TenantId);
 
         double delay = Random.Shared.NextDouble() * (configuration.MaxWorkDurationInSeconds - configuration.MinWorkDurationInSeconds) + configuration.MinWorkDurationInSeconds;
-        logger.LogDebug("Work on tenant {TenantId} will take {Delay} seconds.", obj.TenantId, delay);
+        logger.LogDebug("Work on tenant {TenantId} will take {Delay} seconds.", obj.Body.TenantId, delay);
 
         await Task.Delay(TimeSpan.FromSeconds(delay));
 
-        logger.LogInformation("Work on tenant {TenantId} done.", obj.TenantId);
+        logger.LogInformation("Work on tenant {TenantId} done.", obj.Body.TenantId);
+
+        obj.Ack();
     }
 }

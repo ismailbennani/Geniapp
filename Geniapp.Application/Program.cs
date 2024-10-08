@@ -1,4 +1,5 @@
-﻿using CommandLine;
+﻿using System.Text.Json;
+using CommandLine;
 using Geniapp.Application;
 using Geniapp.Application.Configuration;
 using Geniapp.Frontend;
@@ -22,7 +23,7 @@ async Task StartAsync(RunArguments runArgs)
     try
     {
         AgentConfiguration configuration = ParseConfiguration(runArgs.ConfigurationFile);
-        Log.Logger.Information("Found configuration: {Configuration}", configuration);
+        Log.Logger.Information("Found configuration: {Configuration}", JsonSerializer.Serialize(configuration, new JsonSerializerOptions { WriteIndented = true }));
 
         HostApplicationBuilder builder = Host.CreateApplicationBuilder(args);
 
