@@ -20,4 +20,9 @@ class AgentMasterConfiguration
     ///     The work to publish.
     /// </summary>
     public PublishWorkConfiguration Work { get; set; } = new();
+
+    /// <summary>
+    ///     The initial configuration about tenants.
+    /// </summary>
+    public InitialTenantsConfiguration Tenants { get; set; } = new();
 }

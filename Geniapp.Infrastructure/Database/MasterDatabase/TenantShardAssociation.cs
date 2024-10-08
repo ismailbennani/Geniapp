@@ -10,7 +10,7 @@ public class TenantShardAssociation
     TenantShardAssociation() { }
 #pragma warning restore CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
 
-    public TenantShardAssociation(Guid tenantId, Shard? shard)
+    public TenantShardAssociation(Guid tenantId, Shard shard)
     {
         TenantId = tenantId;
         Shard = shard;
@@ -23,7 +23,7 @@ public class TenantShardAssociation
     /// <summary>
     ///     The shard containing the tenant data.
     /// </summary>
-    public Shard? Shard { get; private set; }
+    public Shard Shard { get; private set; }
 
     /// <summary>
     ///     The tenant

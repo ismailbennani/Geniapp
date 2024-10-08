@@ -39,6 +39,7 @@ async Task StartAsync(RunArguments runArgs)
 
         HostApplicationBuilder builder = Host.CreateApplicationBuilder(args);
 
+        AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
         builder.Services.AddSerilog(c => c.WriteTo.Console().MinimumLevel.Is(runArgs.Verbose ? LogEventLevel.Debug : LogEventLevel.Information));
 
         if (configuration?.Master?.Enabled == true)
@@ -52,7 +53,8 @@ async Task StartAsync(RunArguments runArgs)
                         Shards = configuration.Shards,
                         MessageQueue = configuration.MessageQueue,
                         Port = configuration.Master.Port,
-                        Work = configuration.Master.Work
+                        Work = configuration.Master.Work,
+                        Tenants = configuration.Master.Tenants
                     }
                 )
             );

@@ -60,7 +60,7 @@ public class WorkHostedService(
             ShardDbContext? context = await shardContextProvider.GetShardContextOfTenant(obj.Body.TenantId);
             if (context != null)
             {
-                TenantData? tenant = await context.TenantsData.AsNoTracking().SingleOrDefaultAsync(d => d.Tenant.Id == obj.Body.TenantId, cancellationToken);
+                TenantData? tenant = await context.TenantsData.Include(d => d.Tenant).SingleOrDefaultAsync(d => d.Tenant.Id == obj.Body.TenantId, cancellationToken);
                 if (tenant != null)
                 {
                     await using IDbContextTransaction transaction = await context.Database.BeginTransactionAsync(cancellationToken);

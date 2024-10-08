@@ -13,7 +13,8 @@ public class MasterDbContext : DbContext
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        modelBuilder.Entity<TenantShardAssociation>().HasOne<Shard>(a => a.Shard).WithMany();
+        modelBuilder.Entity<Shard>().HasIndex(s => s.Name).IsUnique();
+        modelBuilder.Entity<Shard>().HasMany<TenantShardAssociation>().WithOne(a => a.Shard);
         modelBuilder.Entity<TenantShardAssociation>().HasIndex(a => a.TenantId).IsUnique();
     }
 }

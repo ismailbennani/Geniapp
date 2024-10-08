@@ -10,7 +10,9 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc.ApplicationParts;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 using Serilog;
+using ILogger = Microsoft.Extensions.Logging.ILogger;
 
 namespace Geniapp.Master;
 
@@ -87,6 +89,8 @@ public class MasterHostedService : IHostedService
 
             await _app.Services.RecreateShardsAsync();
 
+            await InitializeTenantsAsync(_app.Services, _configuration.Tenants);
+
             await _app.StartAsync(cancellationToken);
 
             Log.Logger.Information("Master service {ServiceId} started.", serviceId);
@@ -104,5 +108,19 @@ public class MasterHostedService : IHostedService
             await _app.StopAsync(cancellationToken);
             _app = null;
         }
+    }
+
+    static async Task InitializeTenantsAsync(IServiceProvider services, InitialTenantsConfiguration configuration)
+    {
+        IServiceScope scope = services.GetRequiredService<IServiceScopeFactory>().CreateScope();
+        ILogger logger = scope.ServiceProvider.GetRequiredService<ILoggerFactory>().CreateLogger("TenantsBootstrap");
+        CreateTenantsService createTenantsService = scope.ServiceProvider.GetRequiredService<CreateTenantsService>();
+
+        for (int i = 0; i < configuration.Count; i++)
+        {
+            await createTenantsService.CreateTenantAsync();
+        }
+
+        logger.LogInformation("Created {Count} tenants.", configuration.Count);
     }
 }

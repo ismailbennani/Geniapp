@@ -18,6 +18,7 @@ public static class DatabaseHostingExtensions
 
         services.AddScoped<FindShardOfTenant>();
         services.AddScoped<ShardContextProvider>();
+        services.AddScoped<CreateTenantsService>();
     }
 
     public static async Task RecreateShardsAsync(this IServiceProvider services)
@@ -34,7 +35,7 @@ public static class DatabaseHostingExtensions
         logger.LogInformation("Recreating master DB and shards DBs...");
         foreach (ShardConfiguration shard in shards)
         {
-            ShardDbContext? context = await shardContextProvider.GetShardContext(shard.Name);
+            ShardDbContext? context = await shardContextProvider.GetShardContextAsync(shard.Name);
             if (context == null)
             {
                 throw new InvalidOperationException($"Could not get context of shard {shard.Name}.");

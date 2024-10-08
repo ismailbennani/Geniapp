@@ -20,7 +20,7 @@ public class TenantsController(MasterDbContext masterDbContext, ShardContextProv
 
         foreach (Shard shard in shards)
         {
-            ShardDbContext? context = await shardContextProvider.GetShardContext(shard.Name);
+            ShardDbContext? context = await shardContextProvider.GetShardContextAsync(shard.Name);
             if (context == null)
             {
                 logger.LogWarning("Could not build context for shard {ShardName}.", shard.Name);

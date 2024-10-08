@@ -30,7 +30,7 @@ public class PublishWorkHostedService(
         {
             int tenantsCount = masterDbContext.TenantShardAssociations.AsNoTracking().Count();
             int randomTenant = Random.Shared.Next(tenantsCount);
-            TenantShardAssociation? tenantShardAssociation = masterDbContext.TenantShardAssociations.AsNoTracking().Skip(randomTenant).Take(1).FirstOrDefault();
+            TenantShardAssociation? tenantShardAssociation = masterDbContext.TenantShardAssociations.AsNoTracking().Skip(randomTenant).FirstOrDefault();
 
             if (tenantShardAssociation == null)
             {

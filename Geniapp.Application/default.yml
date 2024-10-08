@@ -8,6 +8,10 @@ messageQueue:
   hostName: localhost
 master:
   port: 61298
+  work:
+    delayInSeconds: 60
+  tenants:
+    count: 100
 worker:
   minWorkDurationInSeconds: 0.5
   maxWorkDurationInSeconds: 2
