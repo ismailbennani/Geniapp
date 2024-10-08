@@ -12,6 +12,7 @@ public class MessageQueueService : IDisposable
     IConnection? _connection;
     IModel? _channel;
     readonly HashSet<string> _declaredQueues = [];
+    readonly Dictionary<string, EventingBasicConsumer> _consumers = [];
     readonly HashSet<string> _consumedQueues = [];
 
     public MessageQueueService(MessageQueueConfiguration configuration, ILogger<MessageQueueService> logger)
@@ -41,22 +42,21 @@ public class MessageQueueService : IDisposable
         if (!_declaredQueues.Contains(queueName))
         {
             channel.QueueDeclare(queueName, false, false, false, null);
+            channel.BasicQos(0, 1, false);
             _declaredQueues.Add(queueName);
         }
 
-        if (!_consumedQueues.Contains(queueName))
+        if (!_consumers.TryGetValue(queueName, out EventingBasicConsumer? registeredConsumer))
         {
             _logger.LogInformation("Started consuming messages from queue {Queue}.", queueName);
 
-            EventingBasicConsumer logConsumer = new(channel);
-            logConsumer.Received += (_, args) => _logger.LogDebug("Received message of length {Length} in queue {Queue}.", args.Body.Length, queueName);
-            channel.BasicConsume(queueName, true, logConsumer);
-            _consumedQueues.Add(queueName);
+            registeredConsumer = new EventingBasicConsumer(channel);
+            registeredConsumer.Received += (_, args) => _logger.LogDebug("Received message of length {Length} in queue {Queue}.", args.Body.Length, queueName);
+            channel.BasicConsume(queueName, true, registeredConsumer);
+            _consumers[queueName] = registeredConsumer;
         }
 
-        EventingBasicConsumer basicConsumer = new(channel);
-        basicConsumer.Received += (_, args) => consumer(args);
-        channel.BasicConsume(queueName, true, basicConsumer);
+        registeredConsumer.Received += (_, args) => consumer(args);
     }
 
     public void Reconnect()
@@ -68,7 +68,16 @@ public class MessageQueueService : IDisposable
     }
 
     IConnection GetConnection() => _connection ??= _factory.CreateConnection();
-    IModel GetChannel() => _channel ??= GetConnection().CreateModel();
+
+    IModel GetChannel()
+    {
+        if (_channel == null)
+        {
+            _channel = GetConnection().CreateModel();
+            _channel.ConfirmSelect();
+        }
+        return _channel;
+    }
 
     public void Dispose()
     {
