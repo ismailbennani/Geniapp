@@ -20,7 +20,18 @@ public class TenantData
     public Tenant Tenant { get; private set; }
 
     /// <summary>
-    ///     The actual data.
+    ///     The ID of the last worker that called <see cref="PerformWork" />.
     /// </summary>
-    public double Data { get; set; }
+    public Guid? LastWorkerId { get; private set; }
+
+    /// <summary>
+    ///     The last modification date.
+    /// </summary>
+    public DateTime LastModificationDate { get; private set; }
+
+    public void PerformWork(Guid workerId)
+    {
+        LastWorkerId = workerId;
+        LastModificationDate = DateTime.Now;
+    }
 }

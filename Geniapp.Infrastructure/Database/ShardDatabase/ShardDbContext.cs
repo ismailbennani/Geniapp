@@ -11,6 +11,9 @@ public class ShardDbContext : DbContext
         _connectionString = connectionString;
     }
 
+    public DbSet<Tenant> Tenants { get; private set; }
+    public DbSet<TenantData> TenantsData { get; private set; }
+
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder) => optionsBuilder.UseNpgsql(_connectionString);
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)

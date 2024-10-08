@@ -1,11 +1,20 @@
-﻿using Geniapp.Infrastructure.MessageQueue;
+﻿using Geniapp.Infrastructure.Database;
+using Geniapp.Infrastructure.Database.ShardDatabase;
+using Geniapp.Infrastructure.MessageQueue;
 using Geniapp.Infrastructure.Work;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
 namespace Geniapp.Worker.Work;
 
-public class WorkHostedService(MessageQueueAdapter adapter, WorkerConfiguration configuration, ILogger<WorkerHostedService> logger) : BackgroundService
+public class WorkHostedService(
+    MessageQueueAdapter adapter,
+    WorkerConfiguration workerConfiguration,
+    CurrentWorkerInformation workerInformation,
+    ShardContextProvider shardContextProvider,
+    ILogger<WorkerHostedService> logger
+) : BackgroundService
 {
     readonly Queue<MessageToProcess<WorkItem>> _workQueue = [];
 
@@ -25,7 +34,7 @@ public class WorkHostedService(MessageQueueAdapter adapter, WorkerConfiguration 
             }
 
             MessageToProcess<WorkItem> work = _workQueue.Dequeue();
-            await DoWorkAsync(work);
+            await DoWorkAsync(work, stoppingToken);
         }
     }
 
@@ -35,16 +44,35 @@ public class WorkHostedService(MessageQueueAdapter adapter, WorkerConfiguration 
         logger.LogInformation("Queued work for tenant {TenantId}.", obj.Body.TenantId);
     }
 
-    async Task DoWorkAsync(MessageToProcess<WorkItem> obj)
+    async Task DoWorkAsync(MessageToProcess<WorkItem> obj, CancellationToken cancellationToken = default)
     {
         try
         {
             logger.LogInformation("Executing work on tenant {TenantId}...", obj.Body.TenantId);
 
-            double delay = Random.Shared.NextDouble() * (configuration.MaxWorkDurationInSeconds - configuration.MinWorkDurationInSeconds) + configuration.MinWorkDurationInSeconds;
+            double delay = Random.Shared.NextDouble() * (workerConfiguration.MaxWorkDurationInSeconds - workerConfiguration.MinWorkDurationInSeconds)
+                           + workerConfiguration.MinWorkDurationInSeconds;
             logger.LogDebug("Work on tenant {TenantId} will take {Delay} seconds.", obj.Body.TenantId, delay);
 
-            await Task.Delay(TimeSpan.FromSeconds(delay));
+            await Task.Delay(TimeSpan.FromSeconds(delay), cancellationToken);
+
+            ShardDbContext? context = await shardContextProvider.GetShardContext(obj.Body.TenantId);
+            if (context != null)
+            {
+                TenantData? tenant = await context.TenantsData.SingleOrDefaultAsync(d => d.Tenant.Id == obj.Body.TenantId, cancellationToken);
+                if (tenant != null)
+                {
+                    tenant.PerformWork(workerInformation.ServiceId);
+                }
+                else
+                {
+                    logger.LogError("Could not find tenant {TenantId} in shard.", obj.Body.TenantId);
+                }
+            }
+            else
+            {
+                logger.LogError("Could not find shard of tenant {TenantId}.", obj.Body.TenantId);
+            }
 
             logger.LogInformation("Work on tenant {TenantId} done.", obj.Body.TenantId);
 
