@@ -12,7 +12,7 @@ public class ShardsController(MasterDbContext masterDbContext) : ControllerBase
     [HttpGet]
     public async Task<IReadOnlyCollection<ShardDto>> GetShards()
     {
-        Shard[] shards = await masterDbContext.Shards.ToArrayAsync();
+        Shard[] shards = await masterDbContext.Shards.AsNoTracking().ToArrayAsync();
         List<ShardDto> result = [];
 
         foreach (Shard shard in shards)

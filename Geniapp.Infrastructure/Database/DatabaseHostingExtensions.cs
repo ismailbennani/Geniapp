@@ -1,6 +1,7 @@
 ﻿using Geniapp.Infrastructure.Database.MasterDatabase;
 using Geniapp.Infrastructure.Database.ShardDatabase;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
@@ -52,6 +53,8 @@ public static class DatabaseHostingExtensions
 
         logger.LogInformation("Recreated master.");
 
+        await using IDbContextTransaction transaction = await masterContext.Database.BeginTransactionAsync();
+
         foreach (ShardConfiguration shard in shards)
         {
             Shard shardEntity = new(shard.Name);
@@ -60,5 +63,6 @@ public static class DatabaseHostingExtensions
         }
 
         await masterContext.SaveChangesAsync();
+        await transaction.CommitAsync();
     }
 }

@@ -15,7 +15,7 @@ public class TenantsController(MasterDbContext masterDbContext, ShardContextProv
     [HttpGet]
     public async Task<IReadOnlyCollection<TenantDto>> GetTenantsData()
     {
-        Shard[] shards = await masterDbContext.Shards.ToArrayAsync();
+        Shard[] shards = await masterDbContext.Shards.AsNoTracking().ToArrayAsync();
         List<TenantDto> result = [];
 
         foreach (Shard shard in shards)

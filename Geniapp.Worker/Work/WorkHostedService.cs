@@ -3,6 +3,7 @@ using Geniapp.Infrastructure.Database.ShardDatabase;
 using Geniapp.Infrastructure.MessageQueue;
 using Geniapp.Infrastructure.Work;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
@@ -59,10 +60,15 @@ public class WorkHostedService(
             ShardDbContext? context = await shardContextProvider.GetShardContextOfTenant(obj.Body.TenantId);
             if (context != null)
             {
-                TenantData? tenant = await context.TenantsData.SingleOrDefaultAsync(d => d.Tenant.Id == obj.Body.TenantId, cancellationToken);
+                TenantData? tenant = await context.TenantsData.AsNoTracking().SingleOrDefaultAsync(d => d.Tenant.Id == obj.Body.TenantId, cancellationToken);
                 if (tenant != null)
                 {
+                    await using IDbContextTransaction transaction = await context.Database.BeginTransactionAsync(cancellationToken);
+
                     tenant.PerformWork(workerInformation.ServiceId);
+
+                    await context.SaveChangesAsync(cancellationToken);
+                    await transaction.CommitAsync(cancellationToken);
                 }
                 else
                 {
