@@ -37,15 +37,23 @@ public class WorkHostedService(MessageQueueAdapter adapter, WorkerConfiguration 
 
     async Task DoWorkAsync(MessageToProcess<WorkItem> obj)
     {
-        logger.LogInformation("Executing work on tenant {TenantId}...", obj.Body.TenantId);
+        try
+        {
+            logger.LogInformation("Executing work on tenant {TenantId}...", obj.Body.TenantId);
 
-        double delay = Random.Shared.NextDouble() * (configuration.MaxWorkDurationInSeconds - configuration.MinWorkDurationInSeconds) + configuration.MinWorkDurationInSeconds;
-        logger.LogDebug("Work on tenant {TenantId} will take {Delay} seconds.", obj.Body.TenantId, delay);
+            double delay = Random.Shared.NextDouble() * (configuration.MaxWorkDurationInSeconds - configuration.MinWorkDurationInSeconds) + configuration.MinWorkDurationInSeconds;
+            logger.LogDebug("Work on tenant {TenantId} will take {Delay} seconds.", obj.Body.TenantId, delay);
 
-        await Task.Delay(TimeSpan.FromSeconds(delay));
+            await Task.Delay(TimeSpan.FromSeconds(delay));
 
-        logger.LogInformation("Work on tenant {TenantId} done.", obj.Body.TenantId);
+            logger.LogInformation("Work on tenant {TenantId} done.", obj.Body.TenantId);
 
-        obj.Ack();
+            obj.Ack();
+        }
+        catch (Exception exn)
+        {
+            logger.LogError(exn, "Error while processing work for tenant {TenantId}. Work will be requeued.", obj.Body.TenantId);
+            obj.Nack();
+        }
     }
 }

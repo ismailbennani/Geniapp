@@ -18,4 +18,5 @@ public class MessageToProcess<TBody>
     public TBody Body { get; }
 
     public void Ack() => _channel.BasicAck(_args.DeliveryTag, false);
+    public void Nack() => _channel.BasicNack(_args.DeliveryTag, false, true);
 }
