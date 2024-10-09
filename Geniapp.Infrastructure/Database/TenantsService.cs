@@ -6,13 +6,11 @@ using Microsoft.Extensions.Logging;
 
 namespace Geniapp.Infrastructure.Database;
 
-public class CreateTenantsService(
-    MasterDbContext masterDbContext,
-    ShardContextProvider shardContextProvider,
-    ShardConfigurations configurations,
-    ILogger<CreateTenantsService> logger
-)
+public class TenantsService(MasterDbContext masterDbContext, ShardContextProvider shardContextProvider, ShardConfigurations configurations, ILogger<TenantsService> logger)
 {
+    public async Task<int> GetTenantsCountAsync(CancellationToken cancellationToken = default) =>
+        await masterDbContext.TenantShardAssociations.AsNoTracking().CountAsync(cancellationToken);
+
     public async Task<Tenant> CreateTenantAsync(CancellationToken cancellationToken = default)
     {
         IReadOnlyCollection<ShardConfiguration> shards = configurations.GetAllShardConfigurations();

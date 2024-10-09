@@ -20,13 +20,21 @@ public class InitializeTenantsHostedService(IServiceScopeFactory scopeFactory, I
             return;
         }
 
-        CreateTenantsService createTenantsService = scope.ServiceProvider.GetRequiredService<CreateTenantsService>();
+        TenantsService tenantsService = scope.ServiceProvider.GetRequiredService<TenantsService>();
 
-        for (int i = 0; i < configValue.Count; i++)
+        int tenantsCount = await tenantsService.GetTenantsCountAsync(stoppingToken);
+        if (tenantsCount >= configValue.Count)
         {
-            await createTenantsService.CreateTenantAsync(stoppingToken);
+            logger.LogInformation("Found {ExistingCount} tenants, requested amount is {RequestedCount}. No tenant will be created.", tenantsCount, configValue.Count);
+            return;
         }
 
-        logger.LogInformation("Created {Count} tenants.", configValue.Count);
+        int toCreate = configValue.Count - tenantsCount;
+        for (int i = 0; i < toCreate; i++)
+        {
+            await tenantsService.CreateTenantAsync(stoppingToken);
+        }
+
+        logger.LogInformation("Found {ExistingCount} tenants, created {CreatedCount} new ones. Total: {TotalCount}.", tenantsCount, toCreate, configValue.Count);
     }
 }

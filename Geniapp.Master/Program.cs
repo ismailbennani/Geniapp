@@ -7,6 +7,7 @@ using Geniapp.Master.Work;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Options;
 using Serilog;
 
 Log.Logger = new LoggerConfiguration().ConfigureLogging().CreateBootstrapLogger();
@@ -39,7 +40,12 @@ try
 
     IHost app = builder.Build();
 
-    await app.Services.RecreateShardsAsync();
+    InitialTenantsConfiguration initialTenantsConfiguration = app.Services.GetRequiredService<IOptions<InitialTenantsConfiguration>>().Value;
+
+    if (initialTenantsConfiguration.Recreate)
+    {
+        await app.Services.RecreateShardsAsync();
+    }
 
     await app.RunAsync();
 }

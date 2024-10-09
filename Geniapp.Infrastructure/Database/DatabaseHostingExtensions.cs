@@ -19,7 +19,7 @@ public static class DatabaseHostingExtensions
 
         services.AddScoped<FindShardOfTenant>();
         services.AddScoped<ShardContextProvider>();
-        services.AddScoped<CreateTenantsService>();
+        services.AddScoped<TenantsService>();
     }
 
     public static async Task RecreateShardsAsync(this IServiceProvider services)
