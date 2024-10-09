@@ -1,4 +1,5 @@
 ﻿using System.Reflection;
+using Geniapp.Infrastructure;
 using Geniapp.Infrastructure.Database;
 using Geniapp.Infrastructure.Logging;
 using Geniapp.Infrastructure.MessageQueue;
@@ -16,7 +17,7 @@ try
     Assembly thisAssembly = typeof(Program).Assembly;
 
     Guid serviceId = Guid.NewGuid();
-    CurrentWorkerInformation currentWorkerInformation = new() { ServiceId = serviceId };
+    CurrentServiceInformation currentServiceInformation = new() { ServiceId = serviceId };
     Log.Logger.Information("Worker service {ServiceId} starting...", serviceId);
 
     HostApplicationBuilder builder = Host.CreateApplicationBuilder();
@@ -27,7 +28,7 @@ try
     builder.Services.AddOptions();
 
     builder.Services.Configure<WorkerConfiguration>(builder.Configuration.GetSection("Work"));
-    builder.Services.AddSingleton(currentWorkerInformation);
+    builder.Services.AddSingleton(currentServiceInformation);
 
     builder.Services.AddHostedService<WorkHostedService>();
 

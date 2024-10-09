@@ -1,4 +1,5 @@
 ﻿using Geniapp.Frontend.Components;
+using Geniapp.Infrastructure;
 using Geniapp.Infrastructure.Database;
 using Geniapp.Infrastructure.Logging;
 using Serilog;
@@ -8,6 +9,7 @@ Log.Logger = new LoggerConfiguration().ConfigureLogging().CreateBootstrapLogger(
 try
 {
     Guid serviceId = Guid.NewGuid();
+    CurrentServiceInformation currentServiceInformation = new() { ServiceId = serviceId };
     Log.Logger.Information("Frontend service {ServiceId} starting...", serviceId);
 
     WebApplicationBuilder builder = WebApplication.CreateBuilder();
@@ -16,6 +18,7 @@ try
     builder.Services.AddOptions();
 
     builder.Services.AddRazorComponents().AddInteractiveServerComponents();
+    builder.Services.AddSingleton(currentServiceInformation);
 
     DatabaseConnectionStrings databaseConnections = DatabaseConnectionStrings.FromConfiguration(builder.Configuration);
     builder.Services.ConfigureSharding(databaseConnections);

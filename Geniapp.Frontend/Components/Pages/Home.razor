@@ -1,6 +1,7 @@
 ﻿@page "/"
 @using System.Data
 @using System.Drawing
+@using Geniapp.Infrastructure
 @using Geniapp.Infrastructure.Database
 @using Geniapp.Infrastructure.Database.MasterDatabase
 @using Geniapp.Infrastructure.Database.ShardDatabase
@@ -8,10 +9,47 @@
 @using Microsoft.EntityFrameworkCore.Storage
 @inject MasterDbContext MasterDbContext
 @inject ShardContextProvider ShardContextProvider
+@inject CurrentServiceInformation CurrentServiceInformation
 
 <PageTitle>Geniapp</PageTitle>
 
 <div class="w-100 h-100 d-flex flex-column">
+
+    <div class="p-2">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Frontend</h5>
+                <div class="card-text">
+                    @CurrentServiceInformation.ServiceId
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="p-2">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Workers</h5>
+                <div class="card-text d-flex gap-2">
+                    @{
+                        var workers = _workersLastWork.Select((kv, i) => new { WorkerId = kv.Key, LastWorkTime = kv.Value, Name = kv.Key }).OrderByDescending(x => x.LastWorkTime).ToArray();
+                        @foreach (var worker in workers)
+                        {
+                            string color = ColorTranslator.ToHtml(Color.FromArgb(GetColor(worker.WorkerId).ToArgb()));
+
+                            <div class="d-flex gap-1 align-items-center justify-content-center">
+                                <div style="width:16px;height:16px;background-color:@color"></div>
+                                @worker.Name
+                            </div>
+                        }
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <hr class="p-0 m-0"/>
+
     <div class="p-1">
         @foreach (Shard shard in _shards.Values)
         {
@@ -26,7 +64,7 @@
                                     TenantData? data = _tenantsData.GetValueOrDefault(tenantAssociation.TenantId);
                                     string color = data?.LastWorkerId == null ? "lightgrey" : ColorTranslator.ToHtml(Color.FromArgb(GetColor(data.LastWorkerId.Value).ToArgb()));
 
-                                    <div class="border border-1 border-top-0 border-start-0 text-truncate" style="width:16px;height:16px;background-color:@color">
+                                    <div class="border border-1 border-top-0 border-start-0 text-truncate" style="width:@(_tileSize)px;height:@(_tileSize)px;background-color:@color">
                                     </div>
                                 }
                             </div>
@@ -44,6 +82,8 @@
     Dictionary<Guid, TenantShardAssociation> _tenantAssociations = [];
     Dictionary<Guid, IReadOnlyCollection<TenantShardAssociation>> _shardTenants = [];
     readonly Dictionary<Guid, TenantData> _tenantsData = [];
+    Dictionary<Guid, DateTime> _workersLastWork = [];
+    int _tileSize;
 
     protected override async Task OnInitializedAsync()
     {
@@ -56,10 +96,12 @@
             await transaction.RollbackAsync();
         }
 
-        await RefreshAllDataAsync();
+        _tileSize = GetTileSize(_tenantAssociations.Count);
+
+        await RefreshAllTenantsDataAsync();
     }
 
-    async Task RefreshAllDataAsync()
+    async Task RefreshAllTenantsDataAsync()
     {
         foreach (Shard shard in _shards.Values)
         {
@@ -78,8 +120,36 @@
             }
         }
 
+        _workersLastWork = _tenantsData.Values.Where(d => d.LastWorkerId.HasValue).GroupBy(d => d.LastWorkerId!.Value).ToDictionary(g => g.Key, g => g.Max(d => d.LastModificationDate));
+
         StateHasChanged();
     }
 
-    Color GetColor(Guid id) => Color.FromArgb(id.GetHashCode());
+    static Color GetColor(Guid id) => Color.FromArgb(id.GetHashCode());
+
+    static int GetTileSize(int tenantsCount)
+    {
+        if (tenantsCount > 5000)
+        {
+            return 16;
+        }
+
+        if (tenantsCount > 500)
+        {
+            return 32;
+        }
+
+        if (tenantsCount > 50)
+        {
+            return 64;
+        }
+
+        if (tenantsCount > 5)
+        {
+            return 128;
+        }
+
+        return 256;
+    }
+
 }

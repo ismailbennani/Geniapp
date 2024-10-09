@@ -1,4 +1,5 @@
-﻿using Geniapp.Infrastructure.Database;
+﻿using Geniapp.Infrastructure;
+using Geniapp.Infrastructure.Database;
 using Geniapp.Infrastructure.Database.ShardDatabase;
 using Geniapp.Infrastructure.MessageQueue;
 using Geniapp.Infrastructure.Work;
@@ -13,7 +14,7 @@ namespace Geniapp.Worker.Work;
 public class WorkHostedService(
     MessageQueueAdapter adapter,
     IOptions<WorkerConfiguration> workerConfiguration,
-    CurrentWorkerInformation workerInformation,
+    CurrentServiceInformation serviceInformation,
     ShardContextProvider shardContextProvider,
     ILogger<WorkHostedService> logger
 ) : BackgroundService
@@ -66,7 +67,7 @@ public class WorkHostedService(
                 {
                     await using IDbContextTransaction transaction = await context.Database.BeginTransactionAsync(cancellationToken);
 
-                    tenant.PerformWork(workerInformation.ServiceId);
+                    tenant.PerformWork(serviceInformation.ServiceId);
 
                     await context.SaveChangesAsync(cancellationToken);
                     await transaction.CommitAsync(cancellationToken);
