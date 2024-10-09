@@ -9,7 +9,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Serilog;
 
-Log.Logger = new LoggerConfiguration().ConfigureLogging().CreateBootstrapLogger();
+Log.Logger = new LoggerConfiguration().ConfigureLogging().CreateLogger();
 
 try
 {

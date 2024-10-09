@@ -1,23 +1,20 @@
-﻿<Project Sdk="Microsoft.NET.Sdk.Web">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
         <TargetFramework>net8.0</TargetFramework>
+        <OutputType>Exe</OutputType>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
       <UserSecretsId>cf0f01be-cb09-467c-a4a7-2fd303b7fa9b</UserSecretsId>
   </PropertyGroup>
 
     <ItemGroup>
-      <PackageReference Include="NSwag.AspNetCore" Version="14.1.0" />
-      <PackageReference Include="Serilog.AspNetCore" Version="8.0.2" />
-    </ItemGroup>
-
-    <ItemGroup>
       <ProjectReference Include="..\Geniapp.Infrastructure\Geniapp.Infrastructure.csproj" />
     </ItemGroup>
 
     <ItemGroup>
-      <Folder Include="Orchestration\" />
+      <PackageReference Include="Microsoft.Extensions.Hosting" Version="8.0.0" />
+      <PackageReference Include="Serilog.Extensions.Hosting" Version="8.0.0" />
     </ItemGroup>
 
 </Project>
