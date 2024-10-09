@@ -60,7 +60,7 @@ public static class DatabaseHostingExtensions
         {
             Shard shardEntity = new(shard.Name);
             masterContext.Add(shardEntity);
-            logger.LogInformation("Recreated shard {Name}.", shard.Name);
+            logger.LogInformation("Configured shard {Name}.", shard.Name);
         }
 
         await masterContext.SaveChangesAsync();

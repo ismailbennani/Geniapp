@@ -1,6 +1,7 @@
 ﻿using System.Text.Json;
 using System.Text.Json.Serialization;
 using Geniapp.Infrastructure.Database;
+using Geniapp.Infrastructure.Logging;
 using Geniapp.Infrastructure.MessageQueue;
 using Geniapp.Master;
 using Geniapp.Master.Orchestration.Services;
@@ -9,7 +10,7 @@ using Microsoft.Extensions.Options;
 using Serilog;
 using ILogger = Microsoft.Extensions.Logging.ILogger;
 
-Log.Logger = new LoggerConfiguration().WriteTo.Console().CreateBootstrapLogger();
+Log.Logger = new LoggerConfiguration().ConfigureLogging().CreateBootstrapLogger();
 
 try
 {
@@ -18,7 +19,8 @@ try
 
     WebApplicationBuilder builder = WebApplication.CreateBuilder();
 
-    builder.Services.AddSerilog();
+    builder.Services.AddSerilog(cfg => cfg.ConfigureLogging());
+    builder.Services.AddOptions();
 
     builder.Services.AddControllers()
         .AddJsonOptions(
