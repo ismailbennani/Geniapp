@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 
@@ -14,10 +15,10 @@ public class MessageQueueService : IDisposable
     readonly HashSet<string> _declaredQueues = [];
     readonly Dictionary<string, EventingBasicConsumer> _consumers = [];
 
-    public MessageQueueService(MessageQueueConfiguration configuration, ILogger<MessageQueueService> logger)
+    public MessageQueueService(IOptions<MessageQueueConfiguration> configuration, ILogger<MessageQueueService> logger)
     {
         _logger = logger;
-        _factory = new ConnectionFactory { HostName = configuration.HostName };
+        _factory = new ConnectionFactory { HostName = configuration.Value.HostName };
     }
 
     public MessageQueueInformation GetQueueInformation(string queueName) => MessageQueueInformation.Get(GetChannel(), queueName);

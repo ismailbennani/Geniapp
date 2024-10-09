@@ -1,8 +1,6 @@
-﻿using Geniapp.Infrastructure;
+﻿namespace Geniapp.Worker;
 
-namespace Geniapp.Worker;
-
-public class WorkerConfiguration : SharedConfiguration
+public class WorkerConfiguration
 {
     /// <summary>
     ///     The minimal amount of time a worker should idle when performing work.

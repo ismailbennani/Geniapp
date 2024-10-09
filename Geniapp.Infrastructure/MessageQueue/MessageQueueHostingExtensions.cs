@@ -4,10 +4,8 @@ namespace Geniapp.Infrastructure.MessageQueue;
 
 public static class MessageQueueHostingExtensions
 {
-    public static void ConfigureMessageQueue(this IServiceCollection services, MessageQueueConfiguration configuration)
+    public static void AddMessageQueue(this IServiceCollection services)
     {
-        services.AddSingleton(configuration);
-
         services.AddSingleton<MessageQueueService>();
         services.AddTransient<MessageQueueAdapter>();
     }

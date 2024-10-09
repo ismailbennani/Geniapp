@@ -6,15 +6,16 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace Geniapp.Worker.Work;
 
 public class WorkHostedService(
     MessageQueueAdapter adapter,
-    WorkerConfiguration workerConfiguration,
+    IOptions<WorkerConfiguration> workerConfiguration,
     CurrentWorkerInformation workerInformation,
     ShardContextProvider shardContextProvider,
-    ILogger<WorkerHostedService> logger
+    ILogger<WorkHostedService> logger
 ) : BackgroundService
 {
     readonly Queue<MessageToProcess<WorkItem>> _workQueue = [];
@@ -50,9 +51,9 @@ public class WorkHostedService(
         try
         {
             logger.LogInformation("Executing work on tenant {TenantId}...", obj.Body.TenantId);
+            WorkerConfiguration configuration = workerConfiguration.Value;
 
-            double delay = Random.Shared.NextDouble() * (workerConfiguration.MaxWorkDurationInSeconds - workerConfiguration.MinWorkDurationInSeconds)
-                           + workerConfiguration.MinWorkDurationInSeconds;
+            double delay = Random.Shared.NextDouble() * (configuration.MaxWorkDurationInSeconds - configuration.MinWorkDurationInSeconds) + configuration.MinWorkDurationInSeconds;
             logger.LogDebug("Work on tenant {TenantId} will take {Delay} seconds.", obj.Body.TenantId, delay);
 
             await Task.Delay(TimeSpan.FromSeconds(delay), cancellationToken);

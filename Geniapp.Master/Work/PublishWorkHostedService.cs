@@ -2,15 +2,13 @@
 using Geniapp.Infrastructure.MessageQueue;
 using Geniapp.Infrastructure.Work;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace Geniapp.Master.Work;
 
 public class PublishWorkHostedService(
-    MessageQueueAdapter adapter,
-    PublishWorkConfiguration configuration,
-    MasterDbContext masterDbContext,
+    IServiceScopeFactory scopeFactory,
+    IOptions<PublishWorkConfiguration> configuration,
     ILogger<PublishWorkHostedService> logger
 ) : IHostedService
 {
@@ -26,31 +24,43 @@ public class PublishWorkHostedService(
 
     void PublishWork(object? _)
     {
-        try
-        {
-            int tenantsCount = masterDbContext.TenantShardAssociations.AsNoTracking().Count();
-            int randomTenant = Random.Shared.Next(tenantsCount);
-            TenantShardAssociation? tenantShardAssociation = masterDbContext.TenantShardAssociations.AsNoTracking().Skip(randomTenant).FirstOrDefault();
+        using IServiceScope scope = scopeFactory.CreateScope();
+        MasterDbContext masterDbContext = scope.ServiceProvider.GetRequiredService<MasterDbContext>();
+        MessageQueueAdapter adapter = scope.ServiceProvider.GetRequiredService<MessageQueueAdapter>();
 
-            if (tenantShardAssociation == null)
-            {
-                logger.LogInformation("No tenant found, no work to publish.");
-                return;
-            }
+        int tenantsCount = masterDbContext.TenantShardAssociations.AsNoTracking().Count();
+        int randomTenant = Random.Shared.Next(tenantsCount);
+        TenantShardAssociation? tenantShardAssociation = masterDbContext.TenantShardAssociations.AsNoTracking().OrderBy(t => t.Id).Skip(randomTenant).FirstOrDefault();
 
-            WorkItem workItem = new() { TenantId = tenantShardAssociation.TenantId };
-            adapter.PublishWork(workItem);
-        }
-        catch (Exception exn)
+        if (tenantShardAssociation == null)
         {
-            logger.LogError(exn, "An unexpected exception occurred while publishing new work.");
+            logger.LogInformation("No tenant found, no work to publish.");
+            return;
         }
+
+        WorkItem workItem = new() { TenantId = tenantShardAssociation.TenantId };
+        adapter.PublishWork(workItem);
     }
 
     void StartTimer()
     {
-        double delay = configuration.DelayInSeconds;
-        _timer = new Timer(PublishWork, null, TimeSpan.Zero, TimeSpan.FromSeconds(delay));
+        double delay = configuration.Value.DelayInSeconds;
+        _timer = new Timer(
+            o =>
+            {
+                try
+                {
+                    PublishWork(o);
+                }
+                catch (Exception exn)
+                {
+                    logger.LogError(exn, "An unexpected exception occurred while publishing new work.");
+                }
+            },
+            null,
+            TimeSpan.Zero,
+            TimeSpan.FromSeconds(delay)
+        );
         logger.LogInformation("Started publishing work every {Seconds} seconds.", delay);
     }
 
