@@ -1,8 +1,10 @@
-﻿using Geniapp.Infrastructure.Database;
+﻿using System.Reflection;
+using Geniapp.Infrastructure.Database;
 using Geniapp.Infrastructure.Logging;
 using Geniapp.Infrastructure.MessageQueue;
 using Geniapp.Worker;
 using Geniapp.Worker.Work;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Serilog;
@@ -11,11 +13,15 @@ Log.Logger = new LoggerConfiguration().ConfigureLogging().CreateBootstrapLogger(
 
 try
 {
+    Assembly thisAssembly = typeof(Program).Assembly;
+
     Guid serviceId = Guid.NewGuid();
     CurrentWorkerInformation currentWorkerInformation = new() { ServiceId = serviceId };
     Log.Logger.Information("Worker service {ServiceId} starting...", serviceId);
 
     HostApplicationBuilder builder = Host.CreateApplicationBuilder();
+
+    builder.Configuration.AddJsonFile("appsettings.json").AddEnvironmentVariables().AddUserSecrets(thisAssembly);
 
     builder.Services.AddSerilog(cfg => cfg.ConfigureLogging());
     builder.Services.AddOptions();
@@ -33,8 +39,7 @@ try
 
     IHost app = builder.Build();
 
-    await app.StartAsync();
-
+    await app.RunAsync();
 }
 catch (Exception ex)
 {

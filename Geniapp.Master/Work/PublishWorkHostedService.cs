@@ -10,19 +10,31 @@ public class PublishWorkHostedService(
     IServiceScopeFactory scopeFactory,
     IOptions<PublishWorkConfiguration> configuration,
     ILogger<PublishWorkHostedService> logger
-) : IHostedService
+) : BackgroundService
 {
-    Timer? _timer;
-
-    public async Task StartAsync(CancellationToken cancellationToken)
+    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        await StopTimerAsync();
-        StartTimer();
+        while (!stoppingToken.IsCancellationRequested)
+        {
+            await Task.Delay(TimeSpan.FromSeconds(configuration.Value.DelayInSeconds), stoppingToken);
+
+            if (stoppingToken.IsCancellationRequested)
+            {
+                break;
+            }
+
+            try
+            {
+                PublishWork();
+            }
+            catch (Exception exn)
+            {
+                logger.LogError(exn, "An unexpected exception occurred while publishing new work.");
+            }
+        }
     }
 
-    public async Task StopAsync(CancellationToken cancellationToken) => await StopTimerAsync();
-
-    void PublishWork(object? _)
+    void PublishWork()
     {
         using IServiceScope scope = scopeFactory.CreateScope();
         MasterDbContext masterDbContext = scope.ServiceProvider.GetRequiredService<MasterDbContext>();
@@ -40,36 +52,5 @@ public class PublishWorkHostedService(
 
         WorkItem workItem = new() { TenantId = tenantShardAssociation.TenantId };
         adapter.PublishWork(workItem);
-    }
-
-    void StartTimer()
-    {
-        double delay = configuration.Value.DelayInSeconds;
-        _timer = new Timer(
-            o =>
-            {
-                try
-                {
-                    PublishWork(o);
-                }
-                catch (Exception exn)
-                {
-                    logger.LogError(exn, "An unexpected exception occurred while publishing new work.");
-                }
-            },
-            null,
-            TimeSpan.Zero,
-            TimeSpan.FromSeconds(delay)
-        );
-        logger.LogInformation("Started publishing work every {Seconds} seconds.", delay);
-    }
-
-    async Task StopTimerAsync()
-    {
-        if (_timer != null)
-        {
-            await _timer.DisposeAsync();
-            logger.LogInformation("Stopped publishing work.");
-        }
     }
 }

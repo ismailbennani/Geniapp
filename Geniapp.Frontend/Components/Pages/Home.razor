@@ -1,0 +1,85 @@
+﻿@page "/"
+@using System.Data
+@using System.Drawing
+@using Geniapp.Infrastructure.Database
+@using Geniapp.Infrastructure.Database.MasterDatabase
+@using Geniapp.Infrastructure.Database.ShardDatabase
+@using Microsoft.EntityFrameworkCore
+@using Microsoft.EntityFrameworkCore.Storage
+@inject MasterDbContext MasterDbContext
+@inject ShardContextProvider ShardContextProvider
+
+<PageTitle>Geniapp</PageTitle>
+
+<div class="w-100 h-100 d-flex flex-column">
+    <div class="p-1">
+        @foreach (Shard shard in _shards.Values)
+        {
+            <div class="p-2">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">@shard.Name</h5>
+                        <div class="card-text d-flex">
+                            <div class="d-flex flex-wrap align-items-center border border-1 border-bottom-0 border-end-0">
+                                @foreach (TenantShardAssociation tenantAssociation in _shardTenants.GetValueOrDefault(shard.Id) ?? [])
+                                {
+                                    TenantData? data = _tenantsData.GetValueOrDefault(tenantAssociation.TenantId);
+                                    string color = data?.LastWorkerId == null ? "lightgrey" : ColorTranslator.ToHtml(Color.FromArgb(GetColor(data.LastWorkerId.Value).ToArgb()));
+
+                                    <div class="border border-1 border-top-0 border-start-0 text-truncate" style="width:16px;height:16px;background-color:@color">
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+
+    Dictionary<Guid, Shard> _shards = [];
+    Dictionary<Guid, TenantShardAssociation> _tenantAssociations = [];
+    Dictionary<Guid, IReadOnlyCollection<TenantShardAssociation>> _shardTenants = [];
+    readonly Dictionary<Guid, TenantData> _tenantsData = [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        await using (IDbContextTransaction transaction = await MasterDbContext.Database.BeginTransactionAsync(IsolationLevel.ReadUncommitted))
+        {
+            _shards = await MasterDbContext.Shards.AsNoTracking().ToDictionaryAsync(s => s.Id, s => s);
+            _tenantAssociations = await MasterDbContext.TenantShardAssociations.Include(a => a.Shard).AsNoTracking().ToDictionaryAsync(a => a.TenantId, a => a);
+            _shardTenants = _tenantAssociations.GroupBy(kv => kv.Value.Shard.Id).ToDictionary(g => g.Key, IReadOnlyCollection<TenantShardAssociation> (g) => g.Select(kv => kv.Value).ToArray());
+
+            await transaction.RollbackAsync();
+        }
+
+        await RefreshAllDataAsync();
+    }
+
+    async Task RefreshAllDataAsync()
+    {
+        foreach (Shard shard in _shards.Values)
+        {
+            ShardDbContext? context = await ShardContextProvider.GetShardContextAsync(shard.Name);
+            if (context == null)
+            {
+                continue;
+            }
+
+            await using ShardDbContext _ = context;
+
+            TenantData[] tenantsData = await context.TenantsData.AsNoTracking().Include(tenantData => tenantData.Tenant).ToArrayAsync();
+            foreach (TenantData data in tenantsData)
+            {
+                _tenantsData[data.Tenant.Id] = data;
+            }
+        }
+
+        StateHasChanged();
+    }
+
+    Color GetColor(Guid id) => Color.FromArgb(id.GetHashCode());
+}

@@ -6,9 +6,7 @@ using Geniapp.Infrastructure.MessageQueue;
 using Geniapp.Master;
 using Geniapp.Master.Orchestration.Services;
 using Geniapp.Master.Work;
-using Microsoft.Extensions.Options;
 using Serilog;
-using ILogger = Microsoft.Extensions.Logging.ILogger;
 
 Log.Logger = new LoggerConfiguration().ConfigureLogging().CreateBootstrapLogger();
 
@@ -47,6 +45,7 @@ try
     builder.Services.Configure<PublishWorkConfiguration>(builder.Configuration.GetSection("Work"));
 
     builder.Services.AddHostedService<PublishWorkHostedService>();
+    builder.Services.AddHostedService<InitializeTenantsHostedService>();
 
     DatabaseConnectionStrings databaseConnections = DatabaseConnectionStrings.FromConfiguration(builder.Configuration);
     builder.Services.ConfigureSharding(databaseConnections);
@@ -70,7 +69,6 @@ try
     app.MapDefaultControllerRoute();
 
     await app.Services.RecreateShardsAsync();
-    await InitializeTenantsAsync(app.Services);
 
     await app.RunAsync();
 }
@@ -81,28 +79,4 @@ catch (Exception ex)
 finally
 {
     await Log.CloseAndFlushAsync();
-}
-
-return;
-
-static async Task InitializeTenantsAsync(IServiceProvider services)
-{
-    using IServiceScope scope = services.GetRequiredService<IServiceScopeFactory>().CreateScope();
-    ILogger logger = scope.ServiceProvider.GetRequiredService<ILoggerFactory>().CreateLogger("TenantsBootstrap");
-
-    InitialTenantsConfiguration? configuration = scope.ServiceProvider.GetService<IOptions<InitialTenantsConfiguration>>()?.Value;
-    if (configuration == null)
-    {
-        logger.LogInformation("Could not find {ConfigType}, no initialization will be performed.", nameof(InitialTenantsConfiguration));
-        return;
-    }
-
-    CreateTenantsService createTenantsService = scope.ServiceProvider.GetRequiredService<CreateTenantsService>();
-
-    for (int i = 0; i < configuration.Count; i++)
-    {
-        await createTenantsService.CreateTenantAsync();
-    }
-
-    logger.LogInformation("Created {Count} tenants.", configuration.Count);
 }
