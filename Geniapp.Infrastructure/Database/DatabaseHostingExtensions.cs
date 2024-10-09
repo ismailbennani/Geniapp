@@ -11,6 +11,7 @@ public static class DatabaseHostingExtensions
 {
     public static void ConfigureSharding(this IServiceCollection services, DatabaseConnectionStrings databaseConnectionStrings)
     {
+        AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
         services.AddDbContext<MasterDbContext>(opt => opt.UseNpgsql(databaseConnectionStrings.Master));
 
         ShardConfigurations configuration = new(databaseConnectionStrings.Shards);
