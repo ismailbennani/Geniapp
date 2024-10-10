@@ -1,0 +1,70 @@
+services:
+  database:
+    image: postgres:16
+    restart: always
+    environment:
+      POSTGRES_DB: Geniapp
+      POSTGRES_USER: geniapp_admin
+      POSTGRES_PASSWORD: LQtq38Gdnr3Q
+    ports:
+      - 5432:5432
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+  
+  adminer:
+    image: adminer
+    restart: always
+    ports:
+      - 8080:8080
+    environment:
+      ADMINER_DEFAULT_SERVER: PostgreSQL
+  
+  message_queue:
+    image: rabbitmq
+    restart: always
+    ports:
+      - 5672:5672
+  
+  master:
+    image: geniapp.master
+    restart: always
+    build:
+      context: .
+      dockerfile: Geniapp.Master/Dockerfile
+    environment:
+      DOTNET_ENVIRONMENT: "Production"
+      ConnectionStrings__Master: "Server=database;Port=5432;Database=Geniapp;User Id=geniapp_admin;Password=LQtq38Gdnr3Q;"
+      ConnectionStrings__Shard: "Server=database;Port=5432;Database=Geniapp;User Id=geniapp_admin;Password=LQtq38Gdnr3Q;"
+      MessageQueue__HostName: "message_queue"
+      Work__DelayInSeconds: 0.5
+      Tenants__Count: 6000
+  
+  worker:
+    image: geniapp.worker
+    restart: always
+    build:
+      context: .
+      dockerfile: Geniapp.Worker/Dockerfile
+    environment:
+      DOTNET_ENVIRONMENT: "Production"
+      ConnectionStrings__Master: "Server=database;Port=5432;Database=Geniapp;User Id=geniapp_admin;Password=LQtq38Gdnr3Q;"
+      ConnectionStrings__Shard: "Server=database;Port=5432;Database=Geniapp;User Id=geniapp_admin;Password=LQtq38Gdnr3Q;"
+      MessageQueue__HostName: "message_queue"
+      Work__MinWorkDurationInSeconds: 0.1
+      Work__MaxWorkDurationInSeconds: 0.5
+  
+  frontend:
+    image: geniapp.frontend
+    restart: always
+    build:
+      context: .
+      dockerfile: Geniapp.Frontend/Dockerfile
+    ports:
+      - 80:8080
+    environment:
+      ASPNETCORE_ENVIRONMENT: "Production"
+      ConnectionStrings__Master: "Server=database;Port=5432;Database=Geniapp;User Id=geniapp_admin;Password=LQtq38Gdnr3Q;"
+      ConnectionStrings__Shard: "Server=database;Port=5432;Database=Geniapp;User Id=geniapp_admin;Password=LQtq38Gdnr3Q;"
+  
+volumes:
+  pgdata:
