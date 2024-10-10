@@ -1,4 +1,7 @@
 ﻿@page "/"
+@inject CurrentServiceInformation CurrentServiceInformation
+@inject IServiceScopeFactory ScopeFactory
+@implements IDisposable
 @using System.Data
 @using System.Drawing
 @using Geniapp.Infrastructure
@@ -6,10 +9,8 @@
 @using Geniapp.Infrastructure.Database.MasterDatabase
 @using Geniapp.Infrastructure.Database.ShardDatabase
 @using Microsoft.EntityFrameworkCore
-@using Microsoft.EntityFrameworkCore.Storage
-@inject MasterDbContext MasterDbContext
-@inject ShardContextProvider ShardContextProvider
-@inject CurrentServiceInformation CurrentServiceInformation
+@implements IAsyncDisposable
+@rendermode InteractiveServer
 
 <PageTitle>Geniapp</PageTitle>
 
@@ -59,7 +60,21 @@
                                 @foreach (TenantShardAssociation tenantAssociation in _shardTenants.GetValueOrDefault(shard.Id) ?? [])
                                 {
                                     TenantData? data = _tenantsData.GetValueOrDefault(tenantAssociation.TenantId);
-                                    string color = (data?.LastWorkerId == null ? "#D3D3D3" : ColorTranslator.ToHtml(Color.FromArgb(GetColor(data.LastWorkerId.Value).ToArgb()))) + "80"; // 80 is 0.5 alpha in hex;
+                                    string color;
+                                    if (data != null)
+                                    {
+                                        color = data.LastWorkerId == null ? "#D3D3D3" : ColorTranslator.ToHtml(Color.FromArgb(GetColor(data.LastWorkerId.Value).ToArgb()));
+
+                                        bool hasBeenUpdatedInLastTick = _tenantUpdatedInLastTick.Contains(data.Tenant.Id);
+                                        if (!hasBeenUpdatedInLastTick)
+                                        {
+                                            color += "80";
+                                        }
+                                    }
+                                    else
+                                    {
+                                        color = "#D3D3D380";
+                                    }
 
                                     <div class="border border-1 border-top-0 border-start-0 text-truncate" style="width:@(_tileSize)px;height:@(_tileSize)px;background-color:@color">
                                     </div>
@@ -80,29 +95,39 @@
     Dictionary<Guid, IReadOnlyCollection<TenantShardAssociation>> _shardTenants = [];
     readonly Dictionary<Guid, TenantData> _tenantsData = [];
     Dictionary<Guid, DateTime> _workersLastWork = [];
+    readonly HashSet<Guid> _tenantUpdatedInLastTick = [];
     int _tileSize;
+    Timer? _periodicRefresh;
 
     protected override async Task OnInitializedAsync()
     {
-        await using (IDbContextTransaction transaction = await MasterDbContext.Database.BeginTransactionAsync(IsolationLevel.ReadUncommitted))
-        {
-            _shards = await MasterDbContext.Shards.AsNoTracking().ToDictionaryAsync(s => s.Id, s => s);
-            _tenantAssociations = await MasterDbContext.TenantShardAssociations.Include(a => a.Shard).AsNoTracking().ToDictionaryAsync(a => a.TenantId, a => a);
-            _shardTenants = _tenantAssociations.GroupBy(kv => kv.Value.Shard.Id).ToDictionary(g => g.Key, IReadOnlyCollection<TenantShardAssociation> (g) => g.Select(kv => kv.Value).ToArray());
+        using IServiceScope scope = ScopeFactory.CreateScope();
+        await using MasterDbContext masterDbContext = scope.ServiceProvider.GetRequiredService<MasterDbContext>();
 
-            await transaction.RollbackAsync();
+        await using (await masterDbContext.Database.BeginTransactionAsync(IsolationLevel.ReadUncommitted))
+        {
+            _shards = await masterDbContext.Shards.AsNoTracking().ToDictionaryAsync(s => s.Id, s => s);
+            _tenantAssociations = await masterDbContext.TenantShardAssociations.Include(a => a.Shard).AsNoTracking().ToDictionaryAsync(a => a.TenantId, a => a);
+            _shardTenants = _tenantAssociations.GroupBy(kv => kv.Value.Shard.Id).ToDictionary(g => g.Key, IReadOnlyCollection<TenantShardAssociation> (g) => g.Select(kv => kv.Value).ToArray());
         }
 
         _tileSize = GetTileSize(_tenantAssociations.Count);
 
-        await RefreshAllTenantsDataAsync();
+        _periodicRefresh = new Timer(_ => RefreshAllTenantsDataAsync().GetAwaiter().GetResult(), null, 0, 1000);
     }
 
     async Task RefreshAllTenantsDataAsync()
     {
+        using IServiceScope scope = ScopeFactory.CreateScope();
+        await using MasterDbContext masterDbContext = scope.ServiceProvider.GetRequiredService<MasterDbContext>();
+        ShardContextProvider shardContextProvider = scope.ServiceProvider.GetRequiredService<ShardContextProvider>();
+
+        _tenantUpdatedInLastTick.Clear();
+        DateTime mostRecentWork = _workersLastWork.Select(w => w.Value).DefaultIfEmpty(DateTime.MinValue).Max();
+
         foreach (Shard shard in _shards.Values)
         {
-            ShardDbContext? context = await ShardContextProvider.GetShardContextAsync(shard.Name);
+            ShardDbContext? context = await shardContextProvider.GetShardContextAsync(shard.Name);
             if (context == null)
             {
                 continue;
@@ -110,16 +135,17 @@
 
             await using ShardDbContext _ = context;
 
-            TenantData[] tenantsData = await context.TenantsData.AsNoTracking().Include(tenantData => tenantData.Tenant).ToArrayAsync();
+            TenantData[] tenantsData = await context.TenantsData.AsNoTracking().Include(tenantData => tenantData.Tenant).Where(d => d.LastModificationDate >= mostRecentWork).ToArrayAsync();
             foreach (TenantData data in tenantsData)
             {
                 _tenantsData[data.Tenant.Id] = data;
+                _tenantUpdatedInLastTick.Add(data.Tenant.Id);
             }
         }
 
         _workersLastWork = _tenantsData.Values.Where(d => d.LastWorkerId.HasValue).GroupBy(d => d.LastWorkerId!.Value).ToDictionary(g => g.Key, g => g.Max(d => d.LastModificationDate));
 
-        StateHasChanged();
+        await InvokeAsync(StateHasChanged);
     }
 
     static Color GetColor(Guid id) => Color.FromArgb(id.GetHashCode());
@@ -147,6 +173,14 @@
         }
 
         return 256;
+    }
+
+    public void Dispose() => _periodicRefresh?.Dispose();
+
+    public async ValueTask DisposeAsync()
+    {
+        if (_periodicRefresh != null)
+            await _periodicRefresh.DisposeAsync();
     }
 
 }
