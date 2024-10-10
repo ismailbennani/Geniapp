@@ -4,18 +4,21 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using ILogger = Microsoft.Extensions.Logging.ILogger;
 
 namespace Geniapp.Infrastructure.Database;
 
 public static class DatabaseHostingExtensions
 {
-    public static void ConfigureSharding(this IServiceCollection services, DatabaseConnectionStrings databaseConnectionStrings)
+    public static void ConfigureSharding(this IServiceCollection services, DatabaseConnectionStrings databaseConnectionStrings, ILogger? logger = null)
     {
         AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
         services.AddDbContext<MasterDbContext>(opt => opt.UseNpgsql(databaseConnectionStrings.Master));
 
         ShardConfigurations configuration = new(databaseConnectionStrings.Shards);
         services.AddSingleton(configuration);
+
+        logger?.LogInformation("Found shards: {Shards}.", string.Join(", ", databaseConnectionStrings.Shards.Select(s => s.Name)));
 
         services.AddScoped<FindShardOfTenant>();
         services.AddScoped<ShardContextProvider>();

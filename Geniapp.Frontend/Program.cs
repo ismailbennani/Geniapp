@@ -4,14 +4,17 @@ using Geniapp.Infrastructure;
 using Geniapp.Infrastructure.Database;
 using Geniapp.Infrastructure.Logging;
 using Serilog;
+using Serilog.Extensions.Logging;
+using ILogger = Microsoft.Extensions.Logging.ILogger;
 
 Log.Logger = new LoggerConfiguration().ConfigureLogging().CreateBootstrapLogger();
+ILogger logger = new SerilogLoggerProvider(Log.Logger).CreateLogger("Bootstrap");
 
 try
 {
     Guid serviceId = Guid.NewGuid();
     CurrentServiceInformation currentServiceInformation = new() { ServiceId = serviceId, Name = DockerNameGeneratorFactory.Create(serviceId).GenerateName() };
-    Log.Logger.Information("Master service {Name} ({ServiceId}) starting...", currentServiceInformation.Name, currentServiceInformation.ServiceId);
+    logger.LogInformation("Master service {Name} ({ServiceId}) starting...", currentServiceInformation.Name, currentServiceInformation.ServiceId);
 
     WebApplicationBuilder builder = WebApplication.CreateBuilder();
 
@@ -22,7 +25,7 @@ try
     builder.Services.AddSingleton(currentServiceInformation);
 
     DatabaseConnectionStrings databaseConnections = DatabaseConnectionStrings.FromConfiguration(builder.Configuration);
-    builder.Services.ConfigureSharding(databaseConnections);
+    builder.Services.ConfigureSharding(databaseConnections, logger);
 
     WebApplication app = builder.Build();
 

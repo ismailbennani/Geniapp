@@ -7,19 +7,23 @@ using Geniapp.Worker;
 using Geniapp.Worker.Work;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 using Serilog;
+using Serilog.Extensions.Logging;
+using ILogger = Microsoft.Extensions.Logging.ILogger;
 
 Log.Logger = new LoggerConfiguration().ConfigureLogging().CreateLogger();
+ILogger logger = new SerilogLoggerProvider(Log.Logger).CreateLogger("Bootstrap");
 
 try
 {
     Guid serviceId = Guid.NewGuid();
     CurrentServiceInformation currentServiceInformation = new() { ServiceId = serviceId, Name = DockerNameGeneratorFactory.Create(serviceId).GenerateName() };
-    Log.Logger.Information("Master service {Name} ({ServiceId}) starting...", currentServiceInformation.Name, currentServiceInformation.ServiceId);
+    logger.LogInformation("Master service {Name} ({ServiceId}) starting...", currentServiceInformation.Name, currentServiceInformation.ServiceId);
 
     HostApplicationBuilder builder = Host.CreateApplicationBuilder();
 
-    Log.Logger.Information("Environment: {Environment}.", builder.Environment.EnvironmentName);
+    logger.LogInformation("Environment: {Environment}.", builder.Environment.EnvironmentName);
 
     builder.Services.AddSerilog(cfg => cfg.ConfigureLogging());
     builder.Services.AddOptions();
@@ -30,7 +34,7 @@ try
     builder.Services.AddHostedService<WorkHostedService>();
 
     DatabaseConnectionStrings databaseConnections = DatabaseConnectionStrings.FromConfiguration(builder.Configuration);
-    builder.Services.ConfigureSharding(databaseConnections);
+    builder.Services.ConfigureSharding(databaseConnections, logger);
 
     builder.Services.Configure<MessageQueueConfiguration>(builder.Configuration.GetSection("MessageQueue"));
     builder.Services.AddMessageQueue();
