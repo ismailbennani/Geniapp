@@ -11,7 +11,7 @@ try
 {
     Guid serviceId = Guid.NewGuid();
     CurrentServiceInformation currentServiceInformation = new() { ServiceId = serviceId, Name = DockerNameGeneratorFactory.Create(serviceId).GenerateName() };
-    Log.Logger.Information("Frontend service {ServiceId} starting...", serviceId);
+    Log.Logger.Information("Master service {Name} ({ServiceId}) starting...", currentServiceInformation.Name, currentServiceInformation.ServiceId);
 
     WebApplicationBuilder builder = WebApplication.CreateBuilder();
 

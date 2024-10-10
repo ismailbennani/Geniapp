@@ -19,7 +19,7 @@ try
 
     Guid serviceId = Guid.NewGuid();
     CurrentServiceInformation currentServiceInformation = new() { ServiceId = serviceId, Name = DockerNameGeneratorFactory.Create(serviceId).GenerateName() };
-    Log.Logger.Information("Worker service {ServiceId} starting...", serviceId);
+    Log.Logger.Information("Master service {Name} ({ServiceId}) starting...", currentServiceInformation.Name, currentServiceInformation.ServiceId);
 
     HostApplicationBuilder builder = Host.CreateApplicationBuilder();
 

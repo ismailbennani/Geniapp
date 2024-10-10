@@ -1,4 +1,6 @@
 ﻿using System.Reflection;
+using DockerNamesGenerator;
+using Geniapp.Infrastructure;
 using Geniapp.Infrastructure.Database;
 using Geniapp.Infrastructure.Logging;
 using Geniapp.Infrastructure.MessageQueue;
@@ -17,7 +19,8 @@ try
     Assembly thisAssembly = typeof(Program).Assembly;
 
     Guid serviceId = Guid.NewGuid();
-    Log.Logger.Information("Master service {ServiceId} starting...", serviceId);
+    CurrentServiceInformation currentServiceInformation = new() { ServiceId = serviceId, Name = DockerNameGeneratorFactory.Create(serviceId).GenerateName() };
+    Log.Logger.Information("Master service {Name} ({ServiceId}) starting...", currentServiceInformation.Name, currentServiceInformation.ServiceId);
 
     HostApplicationBuilder builder = Host.CreateApplicationBuilder();
 
@@ -28,6 +31,7 @@ try
 
     builder.Services.Configure<InitialTenantsConfiguration>(builder.Configuration.GetSection("Tenants"));
     builder.Services.Configure<PublishWorkConfiguration>(builder.Configuration.GetSection("Work"));
+    builder.Services.AddSingleton(currentServiceInformation);
 
     builder.Services.AddHostedService<PublishWorkHostedService>();
     builder.Services.AddHostedService<InitializeTenantsHostedService>();
