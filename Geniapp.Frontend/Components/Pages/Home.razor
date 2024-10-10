@@ -60,23 +60,12 @@
                                 @foreach (TenantShardAssociation tenantAssociation in _shardTenants.GetValueOrDefault(shard.Id) ?? [])
                                 {
                                     TenantData? data = _tenantsData.GetValueOrDefault(tenantAssociation.TenantId);
-                                    string color;
-                                    if (data != null)
-                                    {
-                                        color = data.LastWorkerId == null ? "#D3D3D3" : ColorTranslator.ToHtml(Color.FromArgb(GetColor(data.LastWorkerId.Value).ToArgb()));
+                                    string color = data?.LastWorkerId == null ? "#D3D3D3" : ColorTranslator.ToHtml(Color.FromArgb(GetColor(data.LastWorkerId.Value).ToArgb()));
 
-                                        bool hasBeenUpdatedInLastTick = _tenantUpdatedInLastTick.Contains(data.Tenant.Id);
-                                        if (!hasBeenUpdatedInLastTick)
-                                        {
-                                            color += "80";
-                                        }
-                                    }
-                                    else
-                                    {
-                                        color = "#D3D3D380";
-                                    }
+                                    bool hasBeenUpdatedInLastTick = data != null && data.LastWorkerId.HasValue && _tenantUpdatedInLastTick.Contains(data.Tenant.Id);
+                                    string activeClass = hasBeenUpdatedInLastTick ? "active" : "inactive";
 
-                                    <div class="border border-1 border-top-0 border-start-0 text-truncate" style="width:@(_tileSize)px;height:@(_tileSize)px;background-color:@color">
+                                    <div class="border border-1 border-top-0 border-start-0 text-truncate @activeClass" style="width:@(_tileSize)px;height:@(_tileSize)px;background-color:@color">
                                     </div>
                                 }
                             </div>
@@ -113,10 +102,11 @@
 
         _tileSize = GetTileSize(_tenantAssociations.Count);
 
-        _periodicRefresh = new Timer(_ => RefreshAllTenantsDataAsync().GetAwaiter().GetResult(), null, 0, 1000);
+        await RefreshAllTenantsDataAsync(true);
+        _periodicRefresh = new Timer(_ => RefreshAllTenantsDataAsync(false).GetAwaiter().GetResult(), null, 250, 250);
     }
 
-    async Task RefreshAllTenantsDataAsync()
+    async Task RefreshAllTenantsDataAsync(bool firstRun)
     {
         using IServiceScope scope = ScopeFactory.CreateScope();
         await using MasterDbContext masterDbContext = scope.ServiceProvider.GetRequiredService<MasterDbContext>();
@@ -139,7 +129,11 @@
             foreach (TenantData data in tenantsData)
             {
                 _tenantsData[data.Tenant.Id] = data;
-                _tenantUpdatedInLastTick.Add(data.Tenant.Id);
+
+                if (!firstRun)
+                {
+                    _tenantUpdatedInLastTick.Add(data.Tenant.Id);
+                }
             }
         }
 
