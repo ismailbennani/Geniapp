@@ -15,7 +15,19 @@ public static class DatabaseHostingExtensions
         AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
         services.AddDbContext<MasterDbContext>(opt => opt.UseNpgsql(databaseConnectionStrings.Master));
 
-        ShardConfigurations configuration = new(databaseConnectionStrings.Shards);
+        List<ShardConfiguration> shards = [];
+        foreach (ShardConfiguration shard in databaseConnectionStrings.Shards)
+        {
+            if (string.IsNullOrWhiteSpace(shard.ConnectionString))
+            {
+                logger?.LogWarning("Shard {Name} is not configured properly: connection string is null or whitespace. It will be ignored.", shard.Name);
+                continue;
+            }
+
+            shards.Add(shard);
+        }
+
+        ShardConfigurations configuration = new(shards);
         services.AddSingleton(configuration);
 
         logger?.LogInformation("Found shards: {Shards}.", string.Join(", ", databaseConnectionStrings.Shards.Select(s => s.Name)));
