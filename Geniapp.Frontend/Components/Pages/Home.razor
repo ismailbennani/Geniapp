@@ -29,7 +29,7 @@
                 <h5 class="card-title">Workers</h5>
                 <div class="card-text d-flex gap-2">
                     @{
-                        var workers = _workersLastWork.Select((kv, i) => new { WorkerId = kv.Key, LastWorkTime = kv.Value, Name = kv.Key }).OrderByDescending(x => x.LastWorkTime).ToArray();
+                        var workers = _workersLastWork.Select((kv, i) => new { WorkerId = kv.Key, LastWorkTime = kv.Value, Name = kv.Key }).OrderByDescending(x => x.WorkerId).ToArray();
                         @foreach (var worker in workers)
                         {
                             Color color = GetColor(worker.WorkerId);
@@ -56,7 +56,7 @@
                     <div class="card-body">
                         <h5 class="card-title">@shard.Name</h5>
                         <div class="card-text d-flex">
-                            <div class="d-flex flex-wrap align-items-center border border-1 border-bottom-0 border-end-0">
+                            <div class="d-flex flex-wrap align-items-center">
                                 @foreach (TenantShardAssociation tenantAssociation in _shardTenants.GetValueOrDefault(shard.Id) ?? [])
                                 {
                                     TenantData? data = _tenantsData.GetValueOrDefault(tenantAssociation.TenantId);
@@ -65,7 +65,7 @@
                                     bool hasBeenUpdatedInLastTick = data != null && data.LastWorkerId.HasValue && _tenantUpdatedInLastTick.Contains(data.Tenant.Id);
                                     string activeClass = hasBeenUpdatedInLastTick ? "active" : "inactive";
 
-                                    <div class="border border-1 border-top-0 border-start-0 text-truncate @activeClass" style="width:@(_tileSize)px;height:@(_tileSize)px;background-color:@color">
+                                    <div class="text-truncate @activeClass" style="width:@(_tileSize)px;height:@(_tileSize)px;background-color:@color">
                                     </div>
                                 }
                             </div>
@@ -178,3 +178,4 @@
     }
 
 }
+

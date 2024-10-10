@@ -8,8 +8,6 @@ services:
       POSTGRES_PASSWORD: LQtq38Gdnr3Q
     ports:
       - 5432:5432
-    volumes:
-      - pgdata:/var/lib/postgresql/data
   
   adminer:
     image: adminer
@@ -28,6 +26,11 @@ services:
   master:
     image: geniapp.master
     restart: always
+    depends_on: 
+      database:
+        condition: service_started
+      message_queue:
+        condition: service_started
     build:
       context: .
       dockerfile: Geniapp.Master/Dockerfile
@@ -37,11 +40,14 @@ services:
       ConnectionStrings__Shard: "Server=database;Port=5432;Database=Geniapp;User Id=geniapp_admin;Password=LQtq38Gdnr3Q;"
       MessageQueue__HostName: "message_queue"
       Work__DelayInSeconds: 0.5
-      Tenants__Count: 6000
+      Tenants__Count: 6
   
   worker:
     image: geniapp.worker
     restart: always
+    depends_on:
+      master:
+        condition: service_started
     build:
       context: .
       dockerfile: Geniapp.Worker/Dockerfile
@@ -50,12 +56,15 @@ services:
       ConnectionStrings__Master: "Server=database;Port=5432;Database=Geniapp;User Id=geniapp_admin;Password=LQtq38Gdnr3Q;"
       ConnectionStrings__Shard: "Server=database;Port=5432;Database=Geniapp;User Id=geniapp_admin;Password=LQtq38Gdnr3Q;"
       MessageQueue__HostName: "message_queue"
-      Work__MinWorkDurationInSeconds: 0.1
-      Work__MaxWorkDurationInSeconds: 0.5
+      Work__MinWorkDurationInSeconds: 0.3
+      Work__MaxWorkDurationInSeconds: 0.9
   
   frontend:
     image: geniapp.frontend
     restart: always
+    depends_on:
+      master:
+        condition: service_started
     build:
       context: .
       dockerfile: Geniapp.Frontend/Dockerfile
@@ -65,6 +74,3 @@ services:
       ASPNETCORE_ENVIRONMENT: "Production"
       ConnectionStrings__Master: "Server=database;Port=5432;Database=Geniapp;User Id=geniapp_admin;Password=LQtq38Gdnr3Q;"
       ConnectionStrings__Shard: "Server=database;Port=5432;Database=Geniapp;User Id=geniapp_admin;Password=LQtq38Gdnr3Q;"
-  
-volumes:
-  pgdata:
