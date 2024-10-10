@@ -1,4 +1,5 @@
-﻿using Geniapp.Frontend.Components;
+﻿using DockerNamesGenerator;
+using Geniapp.Frontend.Components;
 using Geniapp.Infrastructure;
 using Geniapp.Infrastructure.Database;
 using Geniapp.Infrastructure.Logging;
@@ -9,7 +10,7 @@ Log.Logger = new LoggerConfiguration().ConfigureLogging().CreateBootstrapLogger(
 try
 {
     Guid serviceId = Guid.NewGuid();
-    CurrentServiceInformation currentServiceInformation = new() { ServiceId = serviceId };
+    CurrentServiceInformation currentServiceInformation = new() { ServiceId = serviceId, Name = DockerNameGeneratorFactory.Create(serviceId).GenerateName() };
     Log.Logger.Information("Frontend service {ServiceId} starting...", serviceId);
 
     WebApplicationBuilder builder = WebApplication.CreateBuilder();

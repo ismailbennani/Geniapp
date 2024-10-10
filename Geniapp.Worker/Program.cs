@@ -1,4 +1,5 @@
 ﻿using System.Reflection;
+using DockerNamesGenerator;
 using Geniapp.Infrastructure;
 using Geniapp.Infrastructure.Database;
 using Geniapp.Infrastructure.Logging;
@@ -17,7 +18,7 @@ try
     Assembly thisAssembly = typeof(Program).Assembly;
 
     Guid serviceId = Guid.NewGuid();
-    CurrentServiceInformation currentServiceInformation = new() { ServiceId = serviceId };
+    CurrentServiceInformation currentServiceInformation = new() { ServiceId = serviceId, Name = DockerNameGeneratorFactory.Create(serviceId).GenerateName() };
     Log.Logger.Information("Worker service {ServiceId} starting...", serviceId);
 
     HostApplicationBuilder builder = Host.CreateApplicationBuilder();
