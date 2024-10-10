@@ -3,6 +3,7 @@ using Geniapp.Frontend.Components;
 using Geniapp.Infrastructure;
 using Geniapp.Infrastructure.Database;
 using Geniapp.Infrastructure.Logging;
+using Microsoft.AspNetCore.Hosting.StaticWebAssets;
 using Serilog;
 using Serilog.Extensions.Logging;
 using ILogger = Microsoft.Extensions.Logging.ILogger;
@@ -17,6 +18,8 @@ try
     logger.LogInformation("Master service {Name} ({ServiceId}) starting...", currentServiceInformation.Name, currentServiceInformation.ServiceId);
 
     WebApplicationBuilder builder = WebApplication.CreateBuilder();
+
+    StaticWebAssetsLoader.UseStaticWebAssets(builder.Environment, builder.Configuration);
 
     builder.Services.AddSerilog(cfg => cfg.ConfigureLogging());
     builder.Services.AddOptions();
