@@ -5,6 +5,7 @@ using Geniapp.Infrastructure.MessageQueue;
 using Geniapp.Infrastructure.Work;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -12,10 +13,9 @@ using Microsoft.Extensions.Options;
 namespace Geniapp.Worker.Work;
 
 public class WorkHostedService(
-    MessageQueueAdapter adapter,
-    IOptions<WorkerConfiguration> workerConfiguration,
+    IServiceScopeFactory scopeFactory,
     CurrentServiceInformation serviceInformation,
-    ShardContextProvider shardContextProvider,
+    IOptions<WorkerConfiguration> workerConfiguration,
     ILogger<WorkHostedService> logger
 ) : BackgroundService
 {
@@ -23,9 +23,14 @@ public class WorkHostedService(
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
+
         await Task.Delay(TimeSpan.FromSeconds(1), stoppingToken);
 
-        adapter.SubscribeToWork(QueueWork);
+        using (IServiceScope scope = scopeFactory.CreateScope())
+        {
+            MessageQueueAdapter adapter = scope.ServiceProvider.GetRequiredService<MessageQueueAdapter>();
+            adapter.SubscribeToWork(QueueWork);
+        }
 
         while (!stoppingToken.IsCancellationRequested)
         {
@@ -51,6 +56,9 @@ public class WorkHostedService(
     {
         try
         {
+            IServiceScope scope = scopeFactory.CreateScope();
+            ShardContextProvider shardContextProvider = scope.ServiceProvider.GetRequiredService<ShardContextProvider>();
+
             logger.LogInformation("Executing work on tenant {TenantId}...", obj.Body.TenantId);
             WorkerConfiguration configuration = workerConfiguration.Value;
 

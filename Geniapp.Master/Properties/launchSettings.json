@@ -4,9 +4,8 @@
     "Master": {
       "commandName": "Project",
       "dotnetRunMessages": true,
-      "applicationUrl": "http://127.0.0.1:61300",
       "environmentVariables": {
-        "ASPNETCORE_ENVIRONMENT": "Development"
+        "DOTNET_ENVIRONMENT": "Development"
       }
     }
   }
