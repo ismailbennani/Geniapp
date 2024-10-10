@@ -19,7 +19,7 @@
     </ItemGroup>
 
     <ItemGroup>
-      <PackageReference Include="DockerNamesGenerator" Version="0.4.0" />
+      <PackageReference Include="DockerNamesGenerator" Version="1.0.0" />
       <PackageReference Include="Serilog.AspNetCore" Version="8.0.2" />
     </ItemGroup>
 

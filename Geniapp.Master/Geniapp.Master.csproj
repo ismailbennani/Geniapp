@@ -13,7 +13,7 @@
     </ItemGroup>
 
     <ItemGroup>
-      <PackageReference Include="DockerNamesGenerator" Version="0.4.0" />
+      <PackageReference Include="DockerNamesGenerator" Version="1.0.0" />
       <PackageReference Include="Microsoft.Extensions.Hosting" Version="8.0.0" />
       <PackageReference Include="Serilog.Extensions.Hosting" Version="8.0.0" />
     </ItemGroup>
