@@ -41,10 +41,13 @@ try
     IHost app = builder.Build();
 
     InitialTenantsConfiguration initialTenantsConfiguration = app.Services.GetRequiredService<IOptions<InitialTenantsConfiguration>>().Value;
-
     if (initialTenantsConfiguration.Recreate)
     {
-        await app.Services.RecreateShardsAsync();
+        await app.Services.RecreateDatabasesAsync();
+    }
+    else
+    {
+        await app.Services.EnsureDatabasesCreatedAsync();
     }
 
     await app.RunAsync();

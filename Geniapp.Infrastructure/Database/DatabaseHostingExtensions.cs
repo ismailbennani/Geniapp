@@ -22,7 +22,59 @@ public static class DatabaseHostingExtensions
         services.AddScoped<TenantsService>();
     }
 
-    public static async Task RecreateShardsAsync(this IServiceProvider services)
+    public static async Task EnsureDatabasesCreatedAsync(this IServiceProvider services)
+    {
+        using IServiceScope scope = services.GetRequiredService<IServiceScopeFactory>().CreateScope();
+
+        ILogger logger = scope.ServiceProvider.GetRequiredService<ILoggerFactory>().CreateLogger("ShardingBootstrap");
+
+        logger.LogInformation("Ensure creation and migration of master...");
+        await using MasterDbContext masterContext = scope.ServiceProvider.GetRequiredService<MasterDbContext>();
+
+        await using (IDbContextTransaction transaction = await masterContext.Database.BeginTransactionAsync())
+        {
+            await masterContext.Database.MigrateAsync();
+            await masterContext.SaveChangesAsync();
+            await transaction.CommitAsync();
+        }
+
+        ShardConfigurations shardConfigurations = scope.ServiceProvider.GetRequiredService<ShardConfigurations>();
+        IReadOnlyCollection<ShardConfiguration> shards = shardConfigurations.GetAllShardConfigurations();
+
+        ShardContextProvider shardContextProvider = scope.ServiceProvider.GetRequiredService<ShardContextProvider>();
+        foreach (ShardConfiguration shard in shards)
+        {
+            logger.LogInformation("Ensure creation and migration of shard {Name}...", shard.Name);
+
+            ShardDbContext? context = await shardContextProvider.GetShardContextAsync(shard.Name);
+            if (context == null)
+            {
+                throw new InvalidOperationException($"Could not get context of shard {shard.Name}.");
+            }
+
+            await using ShardDbContext _ = context;
+            await using IDbContextTransaction transaction = await context.Database.BeginTransactionAsync();
+
+            await context.Database.MigrateAsync();
+
+            Shard? existingShard = await masterContext.Shards.AsNoTracking().SingleOrDefaultAsync(s => s.Name == shard.Name);
+            if (existingShard == null)
+            {
+                Shard shardEntity = new(shard.Name);
+                masterContext.Add(shardEntity);
+                logger.LogInformation("Created shard {Name}.", shard.Name);
+            }
+            else
+            {
+                logger.LogInformation("Shard {Name} exists already.", shard.Name);
+            }
+
+            await masterContext.SaveChangesAsync();
+            await transaction.CommitAsync();
+        }
+    }
+
+    public static async Task RecreateDatabasesAsync(this IServiceProvider services)
     {
         using IServiceScope scope = services.GetRequiredService<IServiceScopeFactory>().CreateScope();
 
