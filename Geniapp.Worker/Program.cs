@@ -23,8 +23,6 @@ try
 
     HostApplicationBuilder builder = Host.CreateApplicationBuilder();
 
-    logger.LogInformation("Environment: {Environment}.", builder.Environment.EnvironmentName);
-
     builder.Services.AddSerilog(cfg => cfg.ConfigureLogging());
     builder.Services.AddOptions();
 
