@@ -13,17 +13,13 @@
 
 <PageTitle>Geniapp</PageTitle>
 
-<div class="w-100 h-100 d-flex flex-column">
+@{
+    string currentServiceColorHtml = ColorTranslator.ToHtml(Color.FromArgb(GetColor(CurrentServiceInformation.ServiceId).ToArgb()));
+}
 
-    <div class="p-2">
-        <div class="card">
-            <div class="card-body">
-                <h5 class="card-title">Frontend</h5>
-                <div class="card-text">
-                    @CurrentServiceInformation.Name
-                </div>
-            </div>
-        </div>
+<div class="w-100 h-100 d-flex flex-column border border-4 overflow-auto" style="box-sizing:border-box;border-color:@currentServiceColorHtml!important">
+    <div class="small text-muted p-1">
+        <span class="fw-semibold">frontend service:</span> @CurrentServiceInformation.Name
     </div>
 
     <div class="p-2">
