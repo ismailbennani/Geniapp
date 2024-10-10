@@ -1,7 +1,35 @@
-﻿.active {
+﻿.tenant-tile {
+    position: relative;
+}
+
+.tenant-tile:hover {
+    border: 4px solid black;
+}
+
+.tenant-tile .tenant-tile-background {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    right: 0;
+}
+
+.tenant-tile.active .tenant-tile-background {
     opacity: 1;
 }
 
-.inactive {
+.tenant-tile.inactive .tenant-tile-background {
     opacity: 0.2;
+}
+
+.tenant-tile .tenant-tile-name {
+    position: absolute;
+    top: 0;
+    transform: translate(-4px, -100%);
+
+    visibility: hidden;
+}
+
+.tenant-tile:hover .tenant-tile-name {
+    visibility: visible;
 }

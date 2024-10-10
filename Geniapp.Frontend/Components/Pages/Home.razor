@@ -62,10 +62,14 @@
                                     TenantData? data = _tenantsData.GetValueOrDefault(tenantAssociation.TenantId);
                                     string color = data?.LastWorkerId == null ? "#D3D3D3" : ColorTranslator.ToHtml(Color.FromArgb(GetColor(data.LastWorkerId.Value).ToArgb()));
 
-                                    bool hasBeenUpdatedInLastTick = data != null && data.LastWorkerId.HasValue && _tenantUpdatedInLastTick.Contains(data.Tenant.Id);
+                                    bool hasBeenUpdatedInLastTick = data is { LastWorkerId: not null } && _tenantUpdatedInLastTick.Contains(data.Tenant.Id);
                                     string activeClass = hasBeenUpdatedInLastTick ? "active" : "inactive";
 
-                                    <div class="text-truncate @activeClass" style="width:@(_tileSize)px;height:@(_tileSize)px;background-color:@color">
+                                    <div class="tenant-tile @activeClass" style="width:@(_tileSize)px;height:@(_tileSize)px">
+                                        <div class="tenant-tile-background" style="background-color:@color"></div>
+                                        <div class="px-1 tenant-tile-name text-bg-dark text-nowrap user-select-none z-3">
+                                            @tenantAssociation.TenantId
+                                        </div>
                                     </div>
                                 }
                             </div>
@@ -178,4 +182,3 @@
     }
 
 }
-
