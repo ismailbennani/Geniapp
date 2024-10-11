@@ -1,4 +1,5 @@
-﻿using Geniapp.Infrastructure.Database;
+﻿using System.Collections.Concurrent;
+using Geniapp.Infrastructure.Database;
 using Geniapp.Infrastructure.Database.MasterDatabase;
 using Geniapp.Infrastructure.Database.ShardDatabase;
 using Geniapp.Infrastructure.MessageQueue;
@@ -17,7 +18,7 @@ public class PublishWorkHostedService(
     ILogger<PublishWorkHostedService> logger
 ) : BackgroundService
 {
-    readonly DateTime _startTime = DateTime.Now;
+    readonly ConcurrentDictionary<Guid, HashSet<Guid>> _alreadySeenInShard = [];
     DateTime _lastTriggerTime = DateTime.MinValue;
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -33,7 +34,9 @@ public class PublishWorkHostedService(
 
             try
             {
+                logger.LogInformation("=============== Start publishing work...");
                 await PublishWorkAsync();
+                logger.LogInformation("=============== Done publishing work.");
             }
             catch (Exception exn)
             {
@@ -66,17 +69,21 @@ public class PublishWorkHostedService(
             return;
         }
 
+        HashSet<Guid> alreadySeen = _alreadySeenInShard.GetOrAdd(shard.Id, []);
+
         await using ShardDbContext _ = context;
-        Tenant[] tenants = await context.TenantsData.AsNoTracking()
-            .Where(d => d.LastModificationDate < _startTime || d.LastModificationDate > _lastTriggerTime)
-            .Select(d => d.Tenant)
-            .ToArrayAsync();
+        TenantData[] tenants = await context.TenantsData.AsNoTracking().Include(d => d.Tenant).ToArrayAsync();
         Random.Shared.Shuffle(tenants);
 
-        foreach (Tenant tenant in tenants)
+        foreach (TenantData tenantData in tenants)
         {
-            WorkItem workItem = new() { TenantId = tenant.Id };
-            adapter.PublishWork(workItem);
+            if (!alreadySeen.Contains(tenantData.Tenant.Id) || tenantData.LastModificationDate > _lastTriggerTime)
+            {
+                WorkItem workItem = new() { TenantId = tenantData.Tenant.Id };
+                adapter.PublishWork(workItem);
+
+                alreadySeen.Add(tenantData.Tenant.Id);
+            }
 
             await Task.Yield();
         }
