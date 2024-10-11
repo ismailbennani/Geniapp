@@ -34,8 +34,6 @@ services:
   message_queue:
     image: rabbitmq
     restart: always
-    ports:
-      - 5672:5672
   
   master:
     image: geniapp.master
@@ -58,8 +56,8 @@ services:
       ConnectionStrings__Shard1: "Server=db_shard_1;Port=5432;Database=Geniapp_Shard1;User Id=geniapp_shard1_admin;Password=uZeY29Bp9itt;"
       ConnectionStrings__Shard2: "Server=db_shard_2;Port=5432;Database=Geniapp_Shard2;User Id=geniapp_shard2_admin;Password=W5H91iI4pLAU;"
       MessageQueue__HostName: "message_queue"
-      Work__DelayInSeconds: 0.5
-      Tenants__Count: 6
+      Work__DelayInSeconds: ${DELAY_IN_SECONDS:-1}
+      Tenants__Count: ${TENANTS_COUNT:-6}
 
   worker:
     image: geniapp.worker
@@ -76,8 +74,8 @@ services:
       ConnectionStrings__Shard1: "Server=db_shard_1;Port=5432;Database=Geniapp_Shard1;User Id=geniapp_shard1_admin;Password=uZeY29Bp9itt;"
       ConnectionStrings__Shard2: "Server=db_shard_2;Port=5432;Database=Geniapp_Shard2;User Id=geniapp_shard2_admin;Password=W5H91iI4pLAU;"
       MessageQueue__HostName: "message_queue"
-      Work__MinWorkDurationInSeconds: 0.3
-      Work__MaxWorkDurationInSeconds: 0.9
+      Work__MinWorkDurationInSeconds: 0.01
+      Work__MaxWorkDurationInSeconds: 0.1
   
   frontend:
     image: geniapp.frontend
