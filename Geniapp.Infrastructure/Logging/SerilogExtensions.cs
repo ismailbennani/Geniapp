@@ -11,7 +11,7 @@ public static class SerilogExtensions
     const LogEventLevel DefaultLoggingLevel = LogEventLevel.Information;
     #endif
 
-    const LogEventLevel InfrastructureLoggingLevel = LogEventLevel.Warning;
+    const LogEventLevel InfrastructureLoggingLevel = LogEventLevel.Information;
 
     const string OutputTemplate = "[{Timestamp:HH:mm:ss} {Level:u3}] {Message:lj} ({SourceContext}){NewLine}{Exception}";
 
