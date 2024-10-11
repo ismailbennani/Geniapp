@@ -33,7 +33,7 @@ services:
         condition: service_started
     build:
       context: .
-      dockerfile: Geniapp.Master/Dockerfile
+      dockerfile: ../Geniapp.Master/Dockerfile
     environment:
       DOTNET_ENVIRONMENT: "Production"
       ConnectionStrings__Master: "Server=database;Port=5432;Database=Geniapp;User Id=geniapp_admin;Password=LQtq38Gdnr3Q;"
@@ -50,7 +50,7 @@ services:
         condition: service_started
     build:
       context: .
-      dockerfile: Geniapp.Worker/Dockerfile
+      dockerfile: ../Geniapp.Worker/Dockerfile
     environment:
       DOTNET_ENVIRONMENT: "Production"
       ConnectionStrings__Master: "Server=database;Port=5432;Database=Geniapp;User Id=geniapp_admin;Password=LQtq38Gdnr3Q;"
@@ -67,7 +67,7 @@ services:
         condition: service_started
     build:
       context: .
-      dockerfile: Geniapp.Frontend/Dockerfile
+      dockerfile: ../Geniapp.Frontend/Dockerfile
     ports:
       - 80:8080
     environment:

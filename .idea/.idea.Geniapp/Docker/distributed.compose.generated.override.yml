@@ -1,0 +1,58 @@
+# This is a generated file. Not intended for manual editing.
+services:
+  frontend:
+    build:
+      context: "D:\\source\\work\\Geniapp\\docker-compose"
+      dockerfile: "../Geniapp.Frontend/Dockerfile"
+      target: "base"
+    command: []
+    entrypoint:
+    - "dotnet"
+    - "/app/bin/Debug/net8.0/Geniapp.Frontend.dll"
+    environment:
+      ASPNETCORE_STATICWEBASSETS: "/app/bin/Debug/net8.0/Geniapp.Frontend.staticwebassets.runtime.CT.json"
+      DOTNET_USE_POLLING_FILE_WATCHER: "true"
+    image: "geniapp.frontend:dev"
+    ports: []
+    volumes:
+    - "C:\\Users\\lahki\\AppData\\Roaming\\Microsoft\\UserSecrets:/home/app/.microsoft/usersecrets"
+    - "C:\\Users\\lahki\\.nuget\\packages:/home/app/.nuget/packages"
+    - "D:\\source\\work\\Geniapp\\Geniapp.Frontend:/app:rw"
+    - "D:\\source\\work\\Geniapp:/src:rw"
+    working_dir: "/app"
+  master:
+    build:
+      context: "D:\\source\\work\\Geniapp\\docker-compose"
+      dockerfile: "../Geniapp.Master/Dockerfile"
+      target: "build"
+    command: []
+    entrypoint:
+    - "dotnet"
+    - "/app/bin/Debug/net8.0/Geniapp.Master.dll"
+    environment: {}
+    image: "geniapp.master:dev"
+    ports: []
+    volumes:
+    - "C:\\Users\\lahki\\AppData\\Roaming\\Microsoft\\UserSecrets:/root/.microsoft/usersecrets"
+    - "C:\\Users\\lahki\\.nuget\\packages:/root/.nuget/packages"
+    - "D:\\source\\work\\Geniapp\\Geniapp.Master:/app:rw"
+    - "D:\\source\\work\\Geniapp:/src:rw"
+    working_dir: "/app"
+  worker:
+    build:
+      context: "D:\\source\\work\\Geniapp\\docker-compose"
+      dockerfile: "../Geniapp.Worker/Dockerfile"
+      target: "build"
+    command: []
+    entrypoint:
+    - "dotnet"
+    - "/app/bin/Debug/net8.0/Geniapp.Worker.dll"
+    environment: {}
+    image: "geniapp.worker:dev"
+    ports: []
+    volumes:
+    - "C:\\Users\\lahki\\AppData\\Roaming\\Microsoft\\UserSecrets:/root/.microsoft/usersecrets"
+    - "C:\\Users\\lahki\\.nuget\\packages:/root/.nuget/packages"
+    - "D:\\source\\work\\Geniapp\\Geniapp.Worker:/app:rw"
+    - "D:\\source\\work\\Geniapp:/src:rw"
+    working_dir: "/app"

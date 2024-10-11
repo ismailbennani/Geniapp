@@ -1,0 +1,107 @@
+services:
+  db_master:
+    image: postgres:16
+    restart: always
+    environment:
+      POSTGRES_DB: Geniapp_Master
+      POSTGRES_USER: geniapp_master_admin
+      POSTGRES_PASSWORD: D7z93BicDKbr
+        
+  db_shard_1:
+    image: postgres:16
+    restart: always
+    environment:
+      POSTGRES_DB: Geniapp_Shard1
+      POSTGRES_USER: geniapp_shard1_admin
+      POSTGRES_PASSWORD: uZeY29Bp9itt
+        
+  db_shard_2:
+    image: postgres:16
+    restart: always
+    environment:
+      POSTGRES_DB: Geniapp_Shard2
+      POSTGRES_USER: geniapp_shard2_admin
+      POSTGRES_PASSWORD: W5H91iI4pLAU
+  
+  adminer:
+    image: adminer
+    restart: always
+    ports:
+      - 8080:8080
+    environment:
+      ADMINER_DEFAULT_SERVER: PostgreSQL
+  
+  message_queue:
+    image: rabbitmq
+    restart: always
+    ports:
+      - 5672:5672
+  
+  master:
+    image: geniapp.master
+    restart: always
+    depends_on:
+      db_master:
+        condition: service_started
+      db_shard_1:
+        condition: service_started
+      db_shard_2:
+        condition: service_started
+      message_queue:
+        condition: service_started
+    build:
+      context: .
+      dockerfile: ../Geniapp.Master/Dockerfile
+    environment:
+      DOTNET_ENVIRONMENT: "Production"
+      ConnectionStrings__Master: "Server=db_master;Port=5432;Database=Geniapp_Master;User Id=geniapp_master_admin;Password=D7z93BicDKbr;"
+      ConnectionStrings__Shard1: "Server=db_shard_1;Port=5432;Database=Geniapp_Shard1;User Id=geniapp_shard1_admin;Password=uZeY29Bp9itt;"
+      ConnectionStrings__Shard2: "Server=db_shard_2;Port=5432;Database=Geniapp_Shard2;User Id=geniapp_shard2_admin;Password=W5H91iI4pLAU;"
+      MessageQueue__HostName: "message_queue"
+      Work__DelayInSeconds: 0.5
+      Tenants__Count: 6
+
+  worker:
+    image: geniapp.worker
+    restart: always
+    depends_on:
+      master:
+        condition: service_started
+    build:
+      context: .
+      dockerfile: ../Geniapp.Worker/Dockerfile
+    environment:
+      DOTNET_ENVIRONMENT: "Production"
+      ConnectionStrings__Master: "Server=db_master;Port=5432;Database=Geniapp_Master;User Id=geniapp_master_admin;Password=D7z93BicDKbr;"
+      ConnectionStrings__Shard1: "Server=db_shard_1;Port=5432;Database=Geniapp_Shard1;User Id=geniapp_shard1_admin;Password=uZeY29Bp9itt;"
+      ConnectionStrings__Shard2: "Server=db_shard_2;Port=5432;Database=Geniapp_Shard2;User Id=geniapp_shard2_admin;Password=W5H91iI4pLAU;"
+      MessageQueue__HostName: "message_queue"
+      Work__MinWorkDurationInSeconds: 0.3
+      Work__MaxWorkDurationInSeconds: 0.9
+  
+  frontend:
+    image: geniapp.frontend
+    restart: always
+    depends_on:
+      master:
+        condition: service_started
+    build:
+      context: .
+      dockerfile: ../Geniapp.Frontend/Dockerfile
+    expose:
+      - "8080"
+    environment:
+      ASPNETCORE_ENVIRONMENT: "Production"
+      ConnectionStrings__Master: "Server=db_master;Port=5432;Database=Geniapp_Master;User Id=geniapp_master_admin;Password=D7z93BicDKbr;"
+      ConnectionStrings__Shard1: "Server=db_shard_1;Port=5432;Database=Geniapp_Shard1;User Id=geniapp_shard1_admin;Password=uZeY29Bp9itt;"
+      ConnectionStrings__Shard2: "Server=db_shard_2;Port=5432;Database=Geniapp_Shard2;User Id=geniapp_shard2_admin;Password=W5H91iI4pLAU;"
+  
+  load_balancer:
+    image: nginx
+    depends_on:
+      frontend:
+        condition: service_started
+    volumes:
+      - ./distributed.nginx.conf:/etc/nginx/nginx.conf:ro
+    ports:
+      - 80:4000
