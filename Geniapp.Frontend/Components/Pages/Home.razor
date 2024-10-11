@@ -30,15 +30,23 @@
                 <div class="card-text d-flex gap-2">
                     @{
                         var workers = _workersLastWork.Select((kv, i) => new { WorkerId = kv.Key, LastWorkTime = kv.Value, Name = kv.Key }).OrderByDescending(x => x.WorkerId).ToArray();
-                        @foreach (var worker in workers)
-                        {
-                            Color color = GetColor(worker.WorkerId);
-                            string colorHtml = ColorTranslator.ToHtml(Color.FromArgb(color.ToArgb()));
 
-                            <div class="d-flex gap-1 align-items-center justify-content-center">
-                                <div style="width:16px;height:16px;background-color:@colorHtml"></div>
-                                @worker.Name
-                            </div>
+                        if (workers.Length == 0)
+                        {
+                            <span class="text-muted">(none)</span>
+                        }
+                        else
+                        {
+                            @foreach (var worker in workers)
+                            {
+                                Color color = GetColor(worker.WorkerId);
+                                string colorHtml = ColorTranslator.ToHtml(Color.FromArgb(color.ToArgb()));
+
+                                <div class="d-flex gap-1 align-items-center justify-content-center">
+                                    <div style="width:16px;height:16px;background-color:@colorHtml"></div>
+                                    @worker.Name
+                                </div>
+                            }
                         }
                     }
                 </div>
