@@ -6,8 +6,6 @@ services:
       POSTGRES_DB: Geniapp
       POSTGRES_USER: geniapp_admin
       POSTGRES_PASSWORD: LQtq38Gdnr3Q
-    ports:
-      - 5432:5432
   
   adminer:
     image: adminer
@@ -20,8 +18,6 @@ services:
   message_queue:
     image: rabbitmq
     restart: always
-    ports:
-      - 5672:5672
   
   master:
     image: geniapp.master
@@ -39,7 +35,7 @@ services:
       ConnectionStrings__Master: "Server=database;Port=5432;Database=Geniapp;User Id=geniapp_admin;Password=LQtq38Gdnr3Q;"
       ConnectionStrings__Shard: "Server=database;Port=5432;Database=Geniapp;User Id=geniapp_admin;Password=LQtq38Gdnr3Q;"
       MessageQueue__HostName: "message_queue"
-      Work__DelayInSeconds: 0.5
+      Work__DelayInSeconds: 1
       Tenants__Count: 6
   
   worker:

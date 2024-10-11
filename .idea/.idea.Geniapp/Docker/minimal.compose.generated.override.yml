@@ -2,8 +2,8 @@
 services:
   frontend:
     build:
-      context: "D:\\source\\work\\Geniapp"
-      dockerfile: "Geniapp.Frontend/Dockerfile"
+      context: "D:\\source\\work\\Geniapp\\docker-compose"
+      dockerfile: "../Geniapp.Frontend/Dockerfile"
       target: "base"
     command: []
     entrypoint:
@@ -22,8 +22,8 @@ services:
     working_dir: "/app"
   master:
     build:
-      context: "D:\\source\\work\\Geniapp"
-      dockerfile: "Geniapp.Master/Dockerfile"
+      context: "D:\\source\\work\\Geniapp\\docker-compose"
+      dockerfile: "../Geniapp.Master/Dockerfile"
       target: "build"
     command: []
     entrypoint:
@@ -40,8 +40,8 @@ services:
     working_dir: "/app"
   worker:
     build:
-      context: "D:\\source\\work\\Geniapp"
-      dockerfile: "Geniapp.Worker/Dockerfile"
+      context: "D:\\source\\work\\Geniapp\\docker-compose"
+      dockerfile: "../Geniapp.Worker/Dockerfile"
       target: "build"
     command: []
     entrypoint:
