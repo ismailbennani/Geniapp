@@ -130,4 +130,5 @@ services:
       ConnectionStrings__Shard1: "Server=db_shard_1;Port=5432;Database=Geniapp_Shard1;User Id=geniapp_shard1_admin;Password=uZeY29Bp9itt;"
       ConnectionStrings__Shard2: "Server=db_shard_2;Port=5432;Database=Geniapp_Shard2;User Id=geniapp_shard2_admin;Password=W5H91iI4pLAU;"
       MessageQueue__HostName: "message_queue"
-      Telemetry__GrpcUrl: "http://otel-collector:4317"
+      Telemetry__GrpcUrl: "http://otel-collector:4317/"
+      Prometheus__Url: "http://prometheus:9090/"

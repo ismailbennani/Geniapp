@@ -39,6 +39,8 @@ try
     builder.Configuration.GetSection("Telemetry").Bind(telemetryConfiguration);
     builder.Services.AddTelemetry(telemetryConfiguration, currentServiceInformation, logger: logger);
 
+    builder.Services.Configure<PrometheusConfiguration>(builder.Configuration.GetSection("Prometheus"));
+
     WebApplication app = builder.Build();
 
     app.UseMessageQueue();

@@ -2,16 +2,21 @@
 @inject ServiceInformation CurrentServiceInformation
 @inject MonitorServices MonitorServices
 @inject IServiceScopeFactory ScopeFactory
+@inject PrometheusClientFactory PrometheusClientFactory
+@inject IOptions<PrometheusConfiguration> PrometheusConfiguration
 @inject ILogger<Home> Logger
 @implements IDisposable
 @using System.Data
 @using System.Drawing
+@using System.Text.Json
 @using Geniapp.Frontend.Components.Components
 @using Geniapp.Infrastructure.Database
 @using Geniapp.Infrastructure.Database.MasterDatabase
 @using Geniapp.Infrastructure.Database.ShardDatabase
 @using Geniapp.Infrastructure.MessageQueue.HealthCheck
+@using Geniapp.Infrastructure.Telemetry
 @using Microsoft.EntityFrameworkCore
+@using Microsoft.Extensions.Options
 @implements IAsyncDisposable
 @rendermode InteractiveServer
 
@@ -80,13 +85,63 @@
             </div>
         </div>
     </div>
+
+    @if (_statistics.Count > 0)
+    {
+        <div class="p-2">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Statistics</h5>
+                    <div class="card-text">
+                        @foreach (Statistic statistic in _statistics)
+                        {
+                            <div class="pt-2 row">
+                                <div class="col-2 fw-semibold">@statistic.Name</div>
+                                <div class="col-2 text-truncate">
+                                    <pre class="m-0 p-0">@statistic.Query</pre>
+                                </div>
+                                <div class="col d-flex flex-wrap column-gap-2">
+                                    @foreach (StatisticValue value in statistic.Result)
+                                    {
+                                        ServiceInformation? service = value.InstanceId.HasValue ? _services.GetValueOrDefault(value.InstanceId.Value) : null;
+
+                                        if (service != null)
+                                        {
+                                            <div class="d-flex gap-1">
+                                                <div class="d-flex"><ServiceView Service="service" Color="@_colorTable.GetValueOrDefault(service.ServiceId)"/>:</div>
+                                                @value.Value.ToString("0.00")
+                                            </div>
+                                        }
+                                        else
+                                        {
+                                            <div class="d-flex gap-1">
+                                                <div>@(value.InstanceName):</div>
+                                                @value.Value.ToString("0.00")
+                                            </div>
+                                        }
+                                    }
+
+                                </div>
+                                <div class="col-1">
+                                    <span class="fw-semibold">Total:</span>
+                                    @statistic.Result.Sum(r => r.Value).ToString("0.00")
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
 </div>
 
 @code {
 
+    readonly Dictionary<Guid, ServiceInformation> _services = [];
     Dictionary<Guid, Shard> _shards = [];
     readonly Dictionary<Guid, TenantData[]> _tenantsData = [];
     readonly Dictionary<Guid, Color> _colorTable = [];
+    readonly List<Statistic> _statistics = [];
     int _tileSize;
     Timer? _periodicRefresh;
 
@@ -100,19 +155,37 @@
             _shards = await masterDbContext.Shards.AsNoTracking().ToDictionaryAsync(s => s.Id, s => s);
         }
 
+        RefreshServices();
         RefreshColorTable();
         await RefreshAllTenantsDataAsync();
 
         _periodicRefresh = new Timer(
             _ =>
             {
+                RefreshServices();
                 RefreshColorTable();
                 RefreshAllTenantsDataAsync().GetAwaiter().GetResult();
+                RefreshStatistics().GetAwaiter().GetResult();
             },
             null,
             250,
             250
         );
+    }
+
+    void RefreshServices()
+    {
+        _services.Clear();
+
+        foreach (ServiceInformation service in MonitorServices.ActiveServices)
+        {
+            _services[service.ServiceId] = service;
+        }
+
+        foreach (ServiceInformation service in MonitorServices.InactiveServices)
+        {
+            _services[service.ServiceId] = service;
+        }
     }
 
     void RefreshColorTable()
@@ -157,6 +230,49 @@
         await InvokeAsync(StateHasChanged);
     }
 
+    async Task RefreshStatistics()
+    {
+        _statistics.Clear();
+
+        string prometheusUrl = PrometheusConfiguration.Value.Url;
+        if (string.IsNullOrWhiteSpace(prometheusUrl))
+        {
+            return;
+        }
+
+        PrometheusClient client = PrometheusClientFactory.CreateClient(new Uri(prometheusUrl));
+
+        try
+        {
+            await GetCompletedWorkRateStatistic(client);
+        }
+        catch (Exception exn)
+        {
+            Logger.LogError(exn, "Could not get completed work rate statistic.");
+        }
+    }
+
+    async Task GetCompletedWorkRateStatistic(PrometheusClient client)
+    {
+        const string completedWorkRateQuery = "rate(work_completed_count_total[10s])";
+        using JsonDocument response = await client.QueryAsync(completedWorkRateQuery);
+
+        JsonElement data = response.RootElement.GetProperty("data");
+        JsonElement result = data.GetProperty("result");
+
+        List<StatisticValue> values = [];
+        foreach (JsonElement element in result.EnumerateArray())
+        {
+            string? id = element.GetProperty("metric").GetProperty("exported_instance").GetString();
+            string? name = element.GetProperty("metric").GetProperty("exported_job").GetString();
+            string value = element.GetProperty("value").EnumerateArray().Skip(1).FirstOrDefault().GetString() ?? "";
+
+            values.Add(new StatisticValue { InstanceId = id != null ? Guid.TryParse(id, out Guid guid) ? guid : null : null, InstanceName = name, Value = double.TryParse(value, out double v) ? v : 0 });
+        }
+
+        _statistics.Add(new Statistic { Name = "Completed work per sec, over last 10s", Query = completedWorkRateQuery, Result = values });
+    }
+
     static Color GetColor(Guid id) => Color.FromArgb(id.GetHashCode());
 
     static int GetTileSize(int tenantsCount)
@@ -190,6 +306,20 @@
     {
         if (_periodicRefresh != null)
             await _periodicRefresh.DisposeAsync();
+    }
+
+    private class Statistic
+    {
+        public required string Name { get; set; }
+        public required string Query { get; set; }
+        public required IReadOnlyCollection<StatisticValue> Result { get; set; }
+    }
+
+    private class StatisticValue
+    {
+        public required Guid? InstanceId { get; set; }
+        public required string? InstanceName { get; set; }
+        public required double Value { get; set; }
     }
 
 }

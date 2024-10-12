@@ -17,6 +17,8 @@ public static class TelemetryHostingExtensions
         ILogger? logger = null
     )
     {
+        services.AddSingleton<PrometheusClientFactory>();
+
         if (string.IsNullOrWhiteSpace(telemetryConfiguration.GrpcUrl))
         {
             logger?.LogWarning("Telemetry not configured properly: {UrlProperty} cannot be null or whitespace. Telemetry won't be used.", nameof(telemetryConfiguration.GrpcUrl));
