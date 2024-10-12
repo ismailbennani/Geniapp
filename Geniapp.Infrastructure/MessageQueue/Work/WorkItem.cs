@@ -1,4 +1,4 @@
-﻿namespace Geniapp.Infrastructure.Work;
+﻿namespace Geniapp.Infrastructure.MessageQueue.Work;
 
 public class WorkItem
 {

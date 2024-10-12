@@ -1,8 +1,8 @@
 ﻿using DockerNamesGenerator;
-using Geniapp.Infrastructure;
 using Geniapp.Infrastructure.Database;
 using Geniapp.Infrastructure.Logging;
 using Geniapp.Infrastructure.MessageQueue;
+using Geniapp.Infrastructure.MessageQueue.HealthCheck;
 using Geniapp.Master;
 using Geniapp.Master.Work;
 using Microsoft.Extensions.DependencyInjection;
@@ -19,7 +19,7 @@ ILogger logger = new SerilogLoggerProvider(Log.Logger).CreateLogger("Bootstrap")
 try
 {
     Guid serviceId = Guid.NewGuid();
-    CurrentServiceInformation currentServiceInformation = new() { ServiceId = serviceId, Name = DockerNameGeneratorFactory.Create(serviceId).GenerateName() };
+    ServiceInformation currentServiceInformation = new() { ServiceId = serviceId, Name = DockerNameGeneratorFactory.Create(serviceId).GenerateName(), Type = ServiceType.Master };
     logger.LogInformation("Master service {Name} ({ServiceId}) starting...", currentServiceInformation.Name, currentServiceInformation.ServiceId);
 
     HostApplicationBuilder builder = Host.CreateApplicationBuilder(args);
@@ -41,6 +41,8 @@ try
     builder.Services.AddMessageQueue();
 
     IHost app = builder.Build();
+
+    app.UseMessageQueue();
 
     InitialTenantsConfiguration initialTenantsConfiguration = app.Services.GetRequiredService<IOptions<InitialTenantsConfiguration>>().Value;
     if (initialTenantsConfiguration.Recreate)

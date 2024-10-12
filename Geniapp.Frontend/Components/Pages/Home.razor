@@ -1,13 +1,13 @@
 ﻿@page "/"
-@inject CurrentServiceInformation CurrentServiceInformation
+@inject ServiceInformation CurrentServiceInformation
 @inject IServiceScopeFactory ScopeFactory
 @implements IDisposable
 @using System.Data
 @using System.Drawing
-@using Geniapp.Infrastructure
 @using Geniapp.Infrastructure.Database
 @using Geniapp.Infrastructure.Database.MasterDatabase
 @using Geniapp.Infrastructure.Database.ShardDatabase
+@using Geniapp.Infrastructure.MessageQueue.HealthCheck
 @using Microsoft.EntityFrameworkCore
 @implements IAsyncDisposable
 @rendermode InteractiveServer

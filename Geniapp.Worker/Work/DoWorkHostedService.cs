@@ -1,8 +1,8 @@
-﻿using Geniapp.Infrastructure;
-using Geniapp.Infrastructure.Database;
+﻿using Geniapp.Infrastructure.Database;
 using Geniapp.Infrastructure.Database.ShardDatabase;
 using Geniapp.Infrastructure.MessageQueue;
-using Geniapp.Infrastructure.Work;
+using Geniapp.Infrastructure.MessageQueue.HealthCheck;
+using Geniapp.Infrastructure.MessageQueue.Work;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.DependencyInjection;
@@ -12,23 +12,22 @@ using Microsoft.Extensions.Options;
 
 namespace Geniapp.Worker.Work;
 
-public class WorkHostedService(
+public class DoWorkHostedService(
     IServiceScopeFactory scopeFactory,
-    CurrentServiceInformation serviceInformation,
+    ServiceInformation currentServiceInformation,
     IOptions<WorkerConfiguration> workerConfiguration,
-    ILogger<WorkHostedService> logger
+    ILogger<DoWorkHostedService> logger
 ) : BackgroundService
 {
     readonly Queue<MessageToProcess<WorkItem>> _workQueue = [];
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-
         await Task.Delay(TimeSpan.FromSeconds(1), stoppingToken);
 
         using (IServiceScope scope = scopeFactory.CreateScope())
         {
-            MessageQueueAdapter adapter = scope.ServiceProvider.GetRequiredService<MessageQueueAdapter>();
+            MessageQueueWorkAdapter adapter = scope.ServiceProvider.GetRequiredService<MessageQueueWorkAdapter>();
             adapter.SubscribeToWork(QueueWork);
         }
 
@@ -75,7 +74,7 @@ public class WorkHostedService(
                 {
                     await using IDbContextTransaction transaction = await context.Database.BeginTransactionAsync(cancellationToken);
 
-                    tenant.PerformWork(serviceInformation.ServiceId);
+                    tenant.PerformWork(currentServiceInformation.ServiceId);
 
                     await context.SaveChangesAsync(cancellationToken);
                     await transaction.CommitAsync(cancellationToken);

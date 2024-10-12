@@ -1,17 +1,16 @@
 ﻿using System.Text;
 using System.Text.Json;
-using Geniapp.Infrastructure.Work;
 using Microsoft.Extensions.Logging;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 
-namespace Geniapp.Infrastructure.MessageQueue;
+namespace Geniapp.Infrastructure.MessageQueue.Work;
 
-public class MessageQueueAdapter(MessageQueueService messageQueueService, ILogger<MessageQueueAdapter> logger)
+public class MessageQueueWorkAdapter(MessageQueueService messageQueueService, ILogger<MessageQueueWorkAdapter> logger)
 {
     readonly JsonSerializerOptions _jsonSerializerOptions = new(JsonSerializerDefaults.Web);
 
-    const string WorkQueueName = "work";
+    public const string WorkQueueName = "work";
 
     public MessageQueueInformation GetInformation() => messageQueueService.GetQueueInformation(WorkQueueName);
 
@@ -19,14 +18,14 @@ public class MessageQueueAdapter(MessageQueueService messageQueueService, ILogge
     {
         string workStr = JsonSerializer.Serialize(work, _jsonSerializerOptions);
         byte[] workBytes = Encoding.UTF8.GetBytes(workStr);
-        messageQueueService.PublishMessage(WorkQueueName, workBytes);
+        messageQueueService.PublishWork(WorkQueueName, workBytes);
 
         logger.LogInformation("Published work item {Work}.", workStr);
     }
 
     public void SubscribeToWork(Action<MessageToProcess<WorkItem>> callback)
     {
-        messageQueueService.RegisterConsumer(WorkQueueName, Sub);
+        messageQueueService.RegisterWorker(WorkQueueName, Sub);
         return;
 
         void Sub(IModel channel, BasicDeliverEventArgs args)

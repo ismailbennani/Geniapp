@@ -5,15 +5,15 @@ namespace Geniapp.Infrastructure.Database;
 
 public class ShardContextProvider(FindShardOfTenant findShardOfTenant, ShardConfigurations shardConfigurations)
 {
-    public async Task<ShardDbContext?> GetShardContextAsync(string shardName)
+    public Task<ShardDbContext?> GetShardContextAsync(string shardName)
     {
         ShardConfiguration? configuration = shardConfigurations.GetShardConfiguration(shardName);
         if (configuration == null)
         {
-            return null;
+            return Task.FromResult<ShardDbContext?>(null);
         }
 
-        return new ShardDbContext(configuration.ConnectionString);
+        return Task.FromResult<ShardDbContext?>(new ShardDbContext(configuration.ConnectionString));
     }
 
     public async Task<ShardDbContext?> GetShardContextOfTenant(Guid tenantId)

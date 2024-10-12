@@ -2,8 +2,7 @@
 using Geniapp.Infrastructure.Database;
 using Geniapp.Infrastructure.Database.MasterDatabase;
 using Geniapp.Infrastructure.Database.ShardDatabase;
-using Geniapp.Infrastructure.MessageQueue;
-using Geniapp.Infrastructure.Work;
+using Geniapp.Infrastructure.MessageQueue.Work;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -41,6 +40,7 @@ public class PublishWorkHostedService(
             catch (Exception exn)
             {
                 logger.LogError(exn, "An unexpected exception occurred while publishing new work.");
+                await Task.Delay(TimeSpan.FromSeconds(configuration.Value.DelayInSeconds * 10), stoppingToken);
             }
         }
     }
@@ -60,7 +60,7 @@ public class PublishWorkHostedService(
     {
         using IServiceScope scope = scopeFactory.CreateScope();
         ShardContextProvider shardContextProvider = scope.ServiceProvider.GetRequiredService<ShardContextProvider>();
-        MessageQueueAdapter adapter = scope.ServiceProvider.GetRequiredService<MessageQueueAdapter>();
+        MessageQueueWorkAdapter adapter = scope.ServiceProvider.GetRequiredService<MessageQueueWorkAdapter>();
 
         ShardDbContext? context = await shardContextProvider.GetShardContextAsync(shard.Name);
         if (context == null)

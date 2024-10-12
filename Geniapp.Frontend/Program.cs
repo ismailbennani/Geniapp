@@ -1,8 +1,9 @@
 ﻿using DockerNamesGenerator;
 using Geniapp.Frontend.Components;
-using Geniapp.Infrastructure;
 using Geniapp.Infrastructure.Database;
 using Geniapp.Infrastructure.Logging;
+using Geniapp.Infrastructure.MessageQueue;
+using Geniapp.Infrastructure.MessageQueue.HealthCheck;
 using Microsoft.AspNetCore.Hosting.StaticWebAssets;
 using Serilog;
 using Serilog.Extensions.Logging;
@@ -14,7 +15,7 @@ ILogger logger = new SerilogLoggerProvider(Log.Logger).CreateLogger("Bootstrap")
 try
 {
     Guid serviceId = Guid.NewGuid();
-    CurrentServiceInformation currentServiceInformation = new() { ServiceId = serviceId, Name = DockerNameGeneratorFactory.Create(serviceId).GenerateName() };
+    ServiceInformation currentServiceInformation = new() { ServiceId = serviceId, Name = DockerNameGeneratorFactory.Create(serviceId).GenerateName(), Type = ServiceType.Frontend };
     logger.LogInformation("Frontend service {Name} ({ServiceId}) starting...", currentServiceInformation.Name, currentServiceInformation.ServiceId);
 
     WebApplicationBuilder builder = WebApplication.CreateBuilder();
@@ -30,7 +31,12 @@ try
     DatabaseConnectionStrings databaseConnections = DatabaseConnectionStrings.FromConfiguration(builder.Configuration);
     builder.Services.ConfigureSharding(databaseConnections, logger);
 
+    builder.Services.Configure<MessageQueueConfiguration>(builder.Configuration.GetSection("MessageQueue"));
+    builder.Services.AddMessageQueue();
+
     WebApplication app = builder.Build();
+
+    app.UseMessageQueue();
 
     app.UseStaticFiles();
     app.UseAntiforgery();

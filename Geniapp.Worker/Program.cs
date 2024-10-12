@@ -1,8 +1,8 @@
 ﻿using DockerNamesGenerator;
-using Geniapp.Infrastructure;
 using Geniapp.Infrastructure.Database;
 using Geniapp.Infrastructure.Logging;
 using Geniapp.Infrastructure.MessageQueue;
+using Geniapp.Infrastructure.MessageQueue.HealthCheck;
 using Geniapp.Worker;
 using Geniapp.Worker.Work;
 using Microsoft.Extensions.DependencyInjection;
@@ -18,7 +18,7 @@ ILogger logger = new SerilogLoggerProvider(Log.Logger).CreateLogger("Bootstrap")
 try
 {
     Guid serviceId = Guid.NewGuid();
-    CurrentServiceInformation currentServiceInformation = new() { ServiceId = serviceId, Name = DockerNameGeneratorFactory.Create(serviceId).GenerateName() };
+    ServiceInformation currentServiceInformation = new() { ServiceId = serviceId, Name = DockerNameGeneratorFactory.Create(serviceId).GenerateName(), Type = ServiceType.Worker };
     logger.LogInformation("Worker service {Name} ({ServiceId}) starting...", currentServiceInformation.Name, currentServiceInformation.ServiceId);
 
     HostApplicationBuilder builder = Host.CreateApplicationBuilder();
@@ -29,7 +29,7 @@ try
     builder.Services.Configure<WorkerConfiguration>(builder.Configuration.GetSection("Work"));
     builder.Services.AddSingleton(currentServiceInformation);
 
-    builder.Services.AddHostedService<WorkHostedService>();
+    builder.Services.AddHostedService<DoWorkHostedService>();
 
     DatabaseConnectionStrings databaseConnections = DatabaseConnectionStrings.FromConfiguration(builder.Configuration);
     builder.Services.ConfigureSharding(databaseConnections, logger);
@@ -38,6 +38,8 @@ try
     builder.Services.AddMessageQueue();
 
     IHost app = builder.Build();
+
+    app.UseMessageQueue();
 
     await app.RunAsync();
 }
