@@ -10,7 +10,7 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
-namespace Geniapp.Worker.Work;
+namespace Geniapp.Worker.BackgroundServices;
 
 public class DoWorkHostedService(
     IServiceScopeFactory scopeFactory,

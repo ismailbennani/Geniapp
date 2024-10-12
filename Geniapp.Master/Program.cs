@@ -4,7 +4,7 @@ using Geniapp.Infrastructure.Logging;
 using Geniapp.Infrastructure.MessageQueue;
 using Geniapp.Infrastructure.MessageQueue.HealthCheck;
 using Geniapp.Master;
-using Geniapp.Master.Work;
+using Geniapp.Master.BackgroundServices;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;

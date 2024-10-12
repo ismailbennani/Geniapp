@@ -9,7 +9,7 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
-namespace Geniapp.Master.Work;
+namespace Geniapp.Master.BackgroundServices;
 
 public class PublishWorkHostedService(
     IServiceScopeFactory scopeFactory,
