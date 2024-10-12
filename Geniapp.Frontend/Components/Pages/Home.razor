@@ -21,7 +21,7 @@
     string currentServiceColorHtml = ColorTranslator.ToHtml(Color.FromArgb(GetColor(CurrentServiceInformation.ServiceId).ToArgb()));
 }
 
-<div class="w-100 h-100 d-flex flex-column border border-4 overflow-auto" style="box-sizing:border-box;border-color:@currentServiceColorHtml!important">
+<div class="w-100 h-100 d-flex flex-column border border-4 overflow-y-auto overflow-x-hidden" style="box-sizing:border-box;border-color:@currentServiceColorHtml!important">
     <div class="small text-muted p-1">
         <span class="fw-semibold">frontend service:</span> @CurrentServiceInformation.Name
     </div>
