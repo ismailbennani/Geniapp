@@ -30,17 +30,17 @@
         <div class="card">
             <div class="card-body">
                 <h5 class="card-title">Services</h5>
-                <div class="card-text">
+                <div class="card-text d-flex flex-column gap-1">
                     @foreach (ServiceType type in new[] { ServiceType.Master, ServiceType.Frontend, ServiceType.Worker })
                     {
                         ServiceInformation[] activeServices = MonitorServices.ActiveServices.Where(s => s.Type == type).ToArray();
                         ServiceInformation[] inactiveServices = MonitorServices.InactiveServices.Where(s => s.Type == type).ToArray();
 
-                        <div class="d-flex gap-2 small">
-                            <div class="fw-semibold">
+                        <div class="row small">
+                            <div class="col-1 fw-semibold text-truncate">
                                 @(type) (@activeServices.Length):
                             </div>
-                            <div class="d-flex gap-4">
+                            <div class="col d-flex flex-wrap column-gap-2">
                                 @if (activeServices.Length == 0 && inactiveServices.Length == 0)
                                 {
                                     <span class="text-muted">(none)</span>
@@ -163,25 +163,25 @@
     {
         if (tenantsCount > 5000)
         {
-            return 16;
+            return 8;
         }
 
         if (tenantsCount > 500)
         {
-            return 32;
+            return 16;
         }
 
         if (tenantsCount > 50)
         {
-            return 64;
+            return 32;
         }
 
         if (tenantsCount > 5)
         {
-            return 128;
+            return 64;
         }
 
-        return 256;
+        return 128;
     }
 
     public void Dispose() => _periodicRefresh?.Dispose();
