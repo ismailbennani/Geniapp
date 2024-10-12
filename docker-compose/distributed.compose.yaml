@@ -35,6 +35,38 @@ services:
     image: rabbitmq
     restart: always
   
+  load_balancer:
+    image: nginx
+    restart: always
+    depends_on:
+      frontend:
+        condition: service_started
+    volumes:
+      - ./distributed.nginx.conf:/etc/nginx/nginx.conf:ro
+    ports:
+      - 80:4000
+  
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib
+    restart: always
+    volumes:
+      - ./distributed.otel.conf.yaml:/etc/otelcol-contrib/config.yaml
+    ports:
+      - 1777:1777
+      - 13133:13133
+      - 55679:55679
+
+  prometheus:
+    image: prom/prometheus
+    restart: always
+    depends_on:
+      otel-collector:
+        condition: service_started
+    volumes:
+      - ./distributed.prometheus.conf.yaml:/etc/prometheus/prometheus.yml
+    ports:
+      - 9090:9090
+  
   master:
     image: geniapp.master
     restart: always
@@ -56,6 +88,7 @@ services:
       ConnectionStrings__Shard1: "Server=db_shard_1;Port=5432;Database=Geniapp_Shard1;User Id=geniapp_shard1_admin;Password=uZeY29Bp9itt;"
       ConnectionStrings__Shard2: "Server=db_shard_2;Port=5432;Database=Geniapp_Shard2;User Id=geniapp_shard2_admin;Password=W5H91iI4pLAU;"
       MessageQueue__HostName: "message_queue"
+      Telemetry__GrpcUrl: "http://otel-collector:4317"
       Work__DelayInSeconds: ${DELAY_IN_SECONDS:-1}
       Tenants__Count: ${TENANTS_COUNT:-6}
 
@@ -74,6 +107,7 @@ services:
       ConnectionStrings__Shard1: "Server=db_shard_1;Port=5432;Database=Geniapp_Shard1;User Id=geniapp_shard1_admin;Password=uZeY29Bp9itt;"
       ConnectionStrings__Shard2: "Server=db_shard_2;Port=5432;Database=Geniapp_Shard2;User Id=geniapp_shard2_admin;Password=W5H91iI4pLAU;"
       MessageQueue__HostName: "message_queue"
+      Telemetry__GrpcUrl: "http://otel-collector:4317"
       Work__MinWorkDurationInSeconds: 0.01
       Work__MaxWorkDurationInSeconds: 0.1
   
@@ -81,6 +115,8 @@ services:
     image: geniapp.frontend
     restart: always
     depends_on:
+      otel-collector:
+        condition: service_started
       master:
         condition: service_started
     build:
@@ -94,14 +130,4 @@ services:
       ConnectionStrings__Shard1: "Server=db_shard_1;Port=5432;Database=Geniapp_Shard1;User Id=geniapp_shard1_admin;Password=uZeY29Bp9itt;"
       ConnectionStrings__Shard2: "Server=db_shard_2;Port=5432;Database=Geniapp_Shard2;User Id=geniapp_shard2_admin;Password=W5H91iI4pLAU;"
       MessageQueue__HostName: "message_queue"
-  
-  load_balancer:
-    image: nginx
-    restart: always
-    depends_on:
-      frontend:
-        condition: service_started
-    volumes:
-      - ./distributed.nginx.conf:/etc/nginx/nginx.conf:ro
-    ports:
-      - 80:4000
+      Telemetry__GrpcUrl: "http://otel-collector:4317"

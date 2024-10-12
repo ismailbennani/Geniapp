@@ -7,14 +7,6 @@ services:
       POSTGRES_USER: geniapp_admin
       POSTGRES_PASSWORD: LQtq38Gdnr3Q
   
-  adminer:
-    image: adminer
-    restart: always
-    ports:
-      - 8080:8080
-    environment:
-      ADMINER_DEFAULT_SERVER: PostgreSQL
-  
   message_queue:
     image: rabbitmq
     restart: always
@@ -70,3 +62,4 @@ services:
       ASPNETCORE_ENVIRONMENT: "Production"
       ConnectionStrings__Master: "Server=database;Port=5432;Database=Geniapp;User Id=geniapp_admin;Password=LQtq38Gdnr3Q;"
       ConnectionStrings__Shard: "Server=database;Port=5432;Database=Geniapp;User Id=geniapp_admin;Password=LQtq38Gdnr3Q;"
+      MessageQueue__HostName: "message_queue"

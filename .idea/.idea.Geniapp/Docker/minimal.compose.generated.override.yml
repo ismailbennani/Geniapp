@@ -8,9 +8,9 @@ services:
     command: []
     entrypoint:
     - "dotnet"
-    - "/app/bin/Debug/net8.0/Geniapp.Frontend.dll"
+    - "/app/bin/Release/net8.0/Geniapp.Frontend.dll"
     environment:
-      ASPNETCORE_STATICWEBASSETS: "/app/bin/Debug/net8.0/Geniapp.Frontend.staticwebassets.runtime.CT.json"
+      ASPNETCORE_STATICWEBASSETS: "/app/bin/Release/net8.0/Geniapp.Frontend.staticwebassets.runtime.CT.json"
       DOTNET_USE_POLLING_FILE_WATCHER: "true"
     image: "geniapp.frontend:dev"
     ports: []
@@ -28,7 +28,7 @@ services:
     command: []
     entrypoint:
     - "dotnet"
-    - "/app/bin/Debug/net8.0/Geniapp.Master.dll"
+    - "/app/bin/Release/net8.0/Geniapp.Master.dll"
     environment: {}
     image: "geniapp.master:dev"
     ports: []
@@ -46,7 +46,7 @@ services:
     command: []
     entrypoint:
     - "dotnet"
-    - "/app/bin/Debug/net8.0/Geniapp.Worker.dll"
+    - "/app/bin/Release/net8.0/Geniapp.Worker.dll"
     environment: {}
     image: "geniapp.worker:dev"
     ports: []
