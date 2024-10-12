@@ -97,6 +97,7 @@ services:
   
   load_balancer:
     image: nginx
+    restart: always
     depends_on:
       frontend:
         condition: service_started
