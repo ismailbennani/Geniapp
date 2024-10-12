@@ -21,7 +21,6 @@ public class MessageQueueService(IOptions<MessageQueueConfiguration> configurati
     {
         IModel channel = GetChannel();
         channel.QueueDeclare(queueName, false, false, false, null);
-        channel.BasicQos(0, 2, false);
     }
 
     /// <summary>
@@ -41,6 +40,7 @@ public class MessageQueueService(IOptions<MessageQueueConfiguration> configurati
     public void RegisterWorker(string queueName, Action<IModel, BasicDeliverEventArgs> consumer)
     {
         IModel channel = GetChannel();
+        //channel.BasicQos(0, 2, false);
 
         if (!_consumers.TryGetValue(queueName, out EventingBasicConsumer? registeredConsumer))
         {

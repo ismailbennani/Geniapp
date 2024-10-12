@@ -111,14 +111,14 @@ public static class DatabaseHostingExtensions
 
             await using ShardDbContext _ = context;
             await context.Database.EnsureDeletedAsync();
-            await context.Database.EnsureCreatedAsync();
+            await context.Database.MigrateAsync();
 
             logger.LogInformation("Recreated shard {Name}.", shard.Name);
         }
 
         await using MasterDbContext masterContext = scope.ServiceProvider.GetRequiredService<MasterDbContext>();
         await masterContext.Database.EnsureDeletedAsync();
-        await masterContext.Database.EnsureCreatedAsync();
+        await masterContext.Database.MigrateAsync();
 
         logger.LogInformation("Recreated master.");
 

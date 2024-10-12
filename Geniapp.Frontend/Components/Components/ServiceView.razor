@@ -1,0 +1,51 @@
+﻿@using System.Drawing
+@using Geniapp.Infrastructure.MessageQueue.HealthCheck
+@if (Service != null)
+{
+    @if (Color.HasValue)
+    {
+        string colorHtml = ColorTranslator.ToHtml(System.Drawing.Color.FromArgb(Color.Value.ToArgb()));
+
+        <div class="d-flex gap-1 align-items-center justify-content-center">
+            @if (Inactive)
+            {
+                <div style="width:16px;height:16px;background-color:@(colorHtml)80"></div>
+                <span class="text-decoration-line-through text-muted">@Service.Name</span>
+                <span>(inactive)</span>
+            }
+            else
+            {
+                <div style="width:16px;height:16px;background-color:@colorHtml"></div>
+                <span>@Service.Name</span>
+            }
+        </div>
+    }
+    else
+    {
+
+        <div>
+            @if (Inactive)
+            {
+                <span class="text-decoration-line-through text-muted">@Service.Name</span>
+                <span>(inactive)</span>
+            }
+            else
+            {
+                <span>@Service.Name</span>
+            }
+        </div>
+    }
+}
+
+@code {
+
+    [Parameter]
+    public ServiceInformation? Service { get; set; }
+
+    [Parameter]
+    public Color? Color { get; set; }
+
+    [Parameter]
+    public bool Inactive { get; set; }
+
+}

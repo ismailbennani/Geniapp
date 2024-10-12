@@ -1,9 +1,12 @@
 ﻿@page "/"
 @inject ServiceInformation CurrentServiceInformation
+@inject MonitorServices MonitorServices
 @inject IServiceScopeFactory ScopeFactory
+@inject ILogger<Home> Logger
 @implements IDisposable
 @using System.Data
 @using System.Drawing
+@using Geniapp.Frontend.Components.Components
 @using Geniapp.Infrastructure.Database
 @using Geniapp.Infrastructure.Database.MasterDatabase
 @using Geniapp.Infrastructure.Database.ShardDatabase
@@ -26,77 +29,64 @@
     <div class="p-2">
         <div class="card">
             <div class="card-body">
-                <h5 class="card-title">Workers</h5>
-                <div class="card-text d-flex gap-2">
-                    @{
-                        var workers = _workersLastWork.Select((kv, i) => new { WorkerId = kv.Key, LastWorkTime = kv.Value, Name = kv.Key }).OrderByDescending(x => x.WorkerId).ToArray();
+                <h5 class="card-title">Services</h5>
+                <div class="card-text">
+                    @foreach (ServiceType type in new[] { ServiceType.Master, ServiceType.Frontend, ServiceType.Worker })
+                    {
+                        ServiceInformation[] activeServices = MonitorServices.ActiveServices.Where(s => s.Type == type).ToArray();
+                        ServiceInformation[] inactiveServices = MonitorServices.InactiveServices.Where(s => s.Type == type).ToArray();
 
-                        if (workers.Length == 0)
-                        {
-                            <span class="text-muted">(none)</span>
-                        }
-                        else
-                        {
-                            @foreach (var worker in workers)
-                            {
-                                Color color = GetColor(worker.WorkerId);
-                                string colorHtml = ColorTranslator.ToHtml(Color.FromArgb(color.ToArgb()));
+                        <div class="d-flex gap-2 small">
+                            <div class="fw-semibold">
+                                @(type) (@activeServices.Length):
+                            </div>
+                            <div class="d-flex gap-4">
+                                @if (activeServices.Length == 0 && inactiveServices.Length == 0)
+                                {
+                                    <span class="text-muted">(none)</span>
+                                }
+                                else
+                                {
+                                    @foreach (ServiceInformation service in activeServices)
+                                    {
+                                        <ServiceView Service="service" Color="@(type == ServiceType.Master ? null : _colorTable.GetValueOrDefault(service.ServiceId))"/>
+                                    }
 
-                                <div class="d-flex gap-1 align-items-center justify-content-center">
-                                    <div style="width:16px;height:16px;background-color:@colorHtml"></div>
-                                    @worker.Name
-                                </div>
-                            }
-                        }
+                                    @foreach (ServiceInformation service in inactiveServices)
+                                    {
+                                        <ServiceView Service="service" Color="@(type == ServiceType.Master ? null : _colorTable.GetValueOrDefault(service.ServiceId))" Inactive/>
+                                    }
+                                }
+                            </div>
+                        </div>
                     }
                 </div>
             </div>
         </div>
     </div>
 
-    <hr class="p-0 m-0"/>
-
-    <div class="p-1">
-        @foreach (Shard shard in _shards.Values)
-        {
-            <div class="p-2">
-                <div class="card">
-                    <div class="card-body">
-                        <h5 class="card-title">@shard.Name</h5>
-                        <div class="card-text d-flex">
-                            <div class="d-flex flex-wrap align-items-center">
-                                @foreach (TenantShardAssociation tenantAssociation in _shardTenants.GetValueOrDefault(shard.Id) ?? [])
-                                {
-                                    TenantData? data = _tenantsData.GetValueOrDefault(tenantAssociation.TenantId);
-                                    string color = data?.LastWorkerId == null ? "#D3D3D3" : ColorTranslator.ToHtml(Color.FromArgb(GetColor(data.LastWorkerId.Value).ToArgb()));
-
-                                    bool hasBeenUpdatedInLastTick = data is { LastWorkerId: not null } && _tenantUpdatedInLastTick.Contains(data.Tenant.Id);
-                                    string activeClass = hasBeenUpdatedInLastTick ? "active" : "inactive";
-
-                                    <div class="tenant-tile @activeClass" style="width:@(_tileSize)px;height:@(_tileSize)px">
-                                        <div class="tenant-tile-background" style="background-color:@color"></div>
-                                        <div class="px-1 tenant-tile-name text-bg-dark text-nowrap user-select-none z-3">
-                                            @tenantAssociation.TenantId
-                                        </div>
-                                    </div>
-                                }
-                            </div>
+    <div class="p-2">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Shards</h5>
+                <div class="card-text">
+                    @foreach (Shard shard in _shards.Values)
+                    {
+                        <div class="pt-2">
+                            <ShardView Shard="shard" Data="@(_tenantsData.GetValueOrDefault(shard.Id) ?? [])" ColorTable="_colorTable" TileSize="_tileSize"/>
                         </div>
-                    </div>
+                    }
                 </div>
             </div>
-        }
+        </div>
     </div>
 </div>
 
 @code {
 
     Dictionary<Guid, Shard> _shards = [];
-    Dictionary<Guid, TenantShardAssociation> _tenantAssociations = [];
-    Dictionary<Guid, IReadOnlyCollection<TenantShardAssociation>> _shardTenants = [];
-    readonly Dictionary<Guid, TenantData> _tenantsData = [];
-    Dictionary<Guid, DateTime> _workersLastWork = [];
-    readonly HashSet<Guid> _tenantUpdatedInLastTick = [];
+    readonly Dictionary<Guid, TenantData[]> _tenantsData = [];
+    readonly Dictionary<Guid, Color> _colorTable = [];
     int _tileSize;
     Timer? _periodicRefresh;
 
@@ -108,48 +98,61 @@
         await using (await masterDbContext.Database.BeginTransactionAsync(IsolationLevel.ReadUncommitted))
         {
             _shards = await masterDbContext.Shards.AsNoTracking().ToDictionaryAsync(s => s.Id, s => s);
-            _tenantAssociations = await masterDbContext.TenantShardAssociations.Include(a => a.Shard).AsNoTracking().ToDictionaryAsync(a => a.TenantId, a => a);
-            _shardTenants = _tenantAssociations.GroupBy(kv => kv.Value.Shard.Id).ToDictionary(g => g.Key, IReadOnlyCollection<TenantShardAssociation> (g) => g.Select(kv => kv.Value).ToArray());
         }
 
-        _tileSize = GetTileSize(_tenantAssociations.Count);
+        RefreshColorTable();
+        await RefreshAllTenantsDataAsync();
 
-        await RefreshAllTenantsDataAsync(true);
-        _periodicRefresh = new Timer(_ => RefreshAllTenantsDataAsync(false).GetAwaiter().GetResult(), null, 250, 250);
+        _periodicRefresh = new Timer(
+            _ =>
+            {
+                RefreshColorTable();
+                RefreshAllTenantsDataAsync().GetAwaiter().GetResult();
+            },
+            null,
+            250,
+            250
+        );
     }
 
-    async Task RefreshAllTenantsDataAsync(bool firstRun)
+    void RefreshColorTable()
     {
-        using IServiceScope scope = ScopeFactory.CreateScope();
-        await using MasterDbContext masterDbContext = scope.ServiceProvider.GetRequiredService<MasterDbContext>();
-        ShardContextProvider shardContextProvider = scope.ServiceProvider.GetRequiredService<ShardContextProvider>();
-
-        _tenantUpdatedInLastTick.Clear();
-        DateTime mostRecentWork = _workersLastWork.Select(w => w.Value).DefaultIfEmpty(DateTime.MinValue).Max();
-
-        foreach (Shard shard in _shards.Values)
+        foreach (Guid id in MonitorServices.ActiveServices.Select(s => s.ServiceId).Concat(MonitorServices.InactiveServices.Select(s => s.ServiceId)).Except(_colorTable.Keys))
         {
-            ShardDbContext? context = await shardContextProvider.GetShardContextAsync(shard.Name);
-            if (context == null)
-            {
-                continue;
-            }
-
-            await using ShardDbContext _ = context;
-
-            TenantData[] tenantsData = await context.TenantsData.AsNoTracking().Include(tenantData => tenantData.Tenant).Where(d => d.LastModificationDate >= mostRecentWork).ToArrayAsync();
-            foreach (TenantData data in tenantsData)
-            {
-                _tenantsData[data.Tenant.Id] = data;
-
-                if (!firstRun)
-                {
-                    _tenantUpdatedInLastTick.Add(data.Tenant.Id);
-                }
-            }
+            _colorTable[id] = GetColor(id);
         }
+    }
 
-        _workersLastWork = _tenantsData.Values.Where(d => d.LastWorkerId.HasValue).GroupBy(d => d.LastWorkerId!.Value).ToDictionary(g => g.Key, g => g.Max(d => d.LastModificationDate));
+    async Task RefreshAllTenantsDataAsync()
+    {
+        try
+        {
+            using IServiceScope scope = ScopeFactory.CreateScope();
+            await using MasterDbContext masterDbContext = scope.ServiceProvider.GetRequiredService<MasterDbContext>();
+            ShardContextProvider shardContextProvider = scope.ServiceProvider.GetRequiredService<ShardContextProvider>();
+
+            int totalTenantsCount = 0;
+            foreach (Shard shard in _shards.Values)
+            {
+                ShardDbContext? context = await shardContextProvider.GetShardContextAsync(shard.Name);
+                if (context == null)
+                {
+                    continue;
+                }
+
+                await using ShardDbContext _ = context;
+
+                TenantData[] tenantsOfShard = await context.TenantsData.AsNoTracking().Include(tenantData => tenantData.Tenant).ToArrayAsync();
+                _tenantsData[shard.Id] = tenantsOfShard;
+                totalTenantsCount += tenantsOfShard.Length;
+            }
+
+            _tileSize = GetTileSize(totalTenantsCount);
+        }
+        catch (Exception exn)
+        {
+            Logger.LogError(exn, "An unexpected error has occurred while refreshing tenants data");
+        }
 
         await InvokeAsync(StateHasChanged);
     }

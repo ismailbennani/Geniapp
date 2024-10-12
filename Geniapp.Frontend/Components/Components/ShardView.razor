@@ -1,0 +1,69 @@
+﻿@using System.Drawing
+@using Geniapp.Infrastructure.Database.MasterDatabase
+@using Geniapp.Infrastructure.Database.ShardDatabase
+@if (Shard != null)
+{
+    <h6>@Shard.Name</h6>
+    <div class="d-flex flex-wrap align-items-center">
+        @foreach (TenantData data in _data.Values)
+        {
+            Color color = Color.LightGray;
+            if (data.LastWorkerId.HasValue && ColorTable.TryGetValue(data.LastWorkerId.Value, out Color workerColor))
+            {
+                color = workerColor;
+            }
+
+            string colorHtml = ColorTranslator.ToHtml(Color.FromArgb(color.ToArgb()));
+
+            bool refreshedInLastUpdate = data is { LastWorkerId: not null } && _refreshedInLastUpdate.Contains(data.Tenant.Id);
+            string activeClass = refreshedInLastUpdate ? "active" : "inactive";
+
+            <div class="tenant-tile @activeClass" style="width:@(TileSize)px;height:@(TileSize)px">
+                <div class="tenant-tile-background" style="background-color:@colorHtml"></div>
+                <div class="px-1 tenant-tile-name text-bg-dark text-nowrap user-select-none z-3">
+                    @data.Tenant.Id
+                </div>
+            </div>
+        }
+    </div>
+}
+
+@code {
+    Dictionary<Guid, TenantData> _data = [];
+    readonly List<Guid> _refreshedInLastUpdate = [];
+
+    [Parameter]
+    public Shard? Shard { get; set; }
+
+    [Parameter]
+    public IReadOnlyCollection<TenantData> Data {
+        get => _data.Values;
+        set => UpdateData(value);
+    }
+
+    [Parameter]
+    public IReadOnlyDictionary<Guid, Color> ColorTable { get; set; } = new Dictionary<Guid, Color>();
+
+    [Parameter]
+    public int TileSize { get; set; }
+
+    protected override void OnInitialized() => UpdateData([]);
+
+    void UpdateData(IReadOnlyCollection<TenantData> tenantsData)
+    {
+        _refreshedInLastUpdate.Clear();
+
+        Dictionary<Guid, TenantData> newData = new();
+        foreach (TenantData data in tenantsData)
+        {
+            newData[data.Tenant.Id] = data;
+            if (_data.TryGetValue(data.Tenant.Id, out TenantData? oldData) && data.LastModificationDate != oldData.LastModificationDate)
+            {
+                _refreshedInLastUpdate.Add(data.Tenant.Id);
+            }
+        }
+
+        _data = newData;
+    }
+
+}
