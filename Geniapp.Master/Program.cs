@@ -3,8 +3,10 @@ using Geniapp.Infrastructure.Database;
 using Geniapp.Infrastructure.Logging;
 using Geniapp.Infrastructure.MessageQueue;
 using Geniapp.Infrastructure.MessageQueue.HealthCheck;
+using Geniapp.Infrastructure.Telemetry;
 using Geniapp.Master;
 using Geniapp.Master.BackgroundServices;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -39,6 +41,10 @@ try
 
     builder.Services.Configure<MessageQueueConfiguration>(builder.Configuration.GetSection("MessageQueue"));
     builder.Services.AddMessageQueue();
+
+    TelemetryConfiguration telemetryConfiguration = new();
+    builder.Configuration.GetSection("Telemetry").Bind(telemetryConfiguration);
+    builder.Services.AddTelemetry(telemetryConfiguration, currentServiceInformation, logger: logger);
 
     IHost app = builder.Build();
 

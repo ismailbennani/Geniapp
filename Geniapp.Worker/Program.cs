@@ -3,8 +3,10 @@ using Geniapp.Infrastructure.Database;
 using Geniapp.Infrastructure.Logging;
 using Geniapp.Infrastructure.MessageQueue;
 using Geniapp.Infrastructure.MessageQueue.HealthCheck;
+using Geniapp.Infrastructure.Telemetry;
 using Geniapp.Worker;
 using Geniapp.Worker.BackgroundServices;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -29,13 +31,18 @@ try
     builder.Services.Configure<WorkerConfiguration>(builder.Configuration.GetSection("Work"));
     builder.Services.AddSingleton(currentServiceInformation);
 
-    builder.Services.AddHostedService<DoWorkHostedService>();
+    builder.Services.AddSingleton<DoWorkHostedService>();
+    builder.Services.AddHostedService<DoWorkHostedService>(s => s.GetRequiredService<DoWorkHostedService>());
 
     DatabaseConnectionStrings databaseConnections = DatabaseConnectionStrings.FromConfiguration(builder.Configuration);
     builder.Services.ConfigureSharding(databaseConnections, logger);
 
     builder.Services.Configure<MessageQueueConfiguration>(builder.Configuration.GetSection("MessageQueue"));
     builder.Services.AddMessageQueue();
+
+    TelemetryConfiguration telemetryConfiguration = new();
+    builder.Configuration.GetSection("Telemetry").Bind(telemetryConfiguration);
+    builder.Services.AddTelemetry(telemetryConfiguration, currentServiceInformation, b => b.AddMeter(DoWorkHostedService.MeterName), logger);
 
     IHost app = builder.Build();
 
