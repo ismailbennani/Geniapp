@@ -5,7 +5,7 @@
 {
     <h6>@Shard.Name</h6>
     <div class="d-flex flex-wrap align-items-center">
-        @foreach (TenantData data in _data.Values)
+        @foreach (TenantData data in _data.Values.OrderBy(t => t.Id))
         {
             Color color = Color.LightGray;
             if (data.LastWorkerId.HasValue && ColorTable.TryGetValue(data.LastWorkerId.Value, out Color workerColor))

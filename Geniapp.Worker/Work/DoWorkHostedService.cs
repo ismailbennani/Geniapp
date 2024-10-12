@@ -23,14 +23,26 @@ public class DoWorkHostedService(
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        await Task.Delay(TimeSpan.FromSeconds(1), stoppingToken);
-
-        using (IServiceScope scope = scopeFactory.CreateScope())
+        // subscribe to queue
+        while (!stoppingToken.IsCancellationRequested)
         {
-            MessageQueueWorkAdapter adapter = scope.ServiceProvider.GetRequiredService<MessageQueueWorkAdapter>();
-            adapter.SubscribeToWork(QueueWork);
+            try
+            {
+                await Task.Delay(TimeSpan.FromSeconds(1), stoppingToken);
+
+                using IServiceScope scope = scopeFactory.CreateScope();
+
+                MessageQueueWorkAdapter adapter = scope.ServiceProvider.GetRequiredService<MessageQueueWorkAdapter>();
+                adapter.SubscribeToWork(QueueWork);
+                break;
+            }
+            catch (Exception exn)
+            {
+                logger.LogError(exn, "Error while subscribing to queue.");
+            }
         }
 
+        // work periodically
         while (!stoppingToken.IsCancellationRequested)
         {
             if (_workQueue.Count == 0)
@@ -95,8 +107,16 @@ public class DoWorkHostedService(
         }
         catch (Exception exn)
         {
-            logger.LogError(exn, "Error while processing work for tenant {TenantId}. Work will be requeued.", obj.Body.TenantId);
-            obj.Nack();
+            logger.LogError(exn, "Error while processing work for tenant {TenantId}. Issuing Nack...", obj.Body.TenantId);
+
+            try
+            {
+                obj.Nack();
+            }
+            catch (Exception innerExn)
+            {
+                logger.LogError(innerExn, "Error while issuing Nack for work for tenant {TenantId}. Work is lost.", obj.Body.TenantId);
+            }
         }
     }
 }
