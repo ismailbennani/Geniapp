@@ -2,7 +2,6 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using OpenTelemetry;
-using OpenTelemetry.Exporter;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
 
@@ -33,11 +32,16 @@ public static class TelemetryHostingExtensions
         builder.WithMetrics(
             b =>
             {
-                b.AddRuntimeInstrumentation();
+                b.AddRuntimeInstrumentation()
+                    .AddOtlpExporter(
+                        (exporterOptions, metricReaderOptions) =>
+                        {
+                            exporterOptions.Endpoint = new Uri(telemetryConfiguration.GrpcUrl);
+                            metricReaderOptions.PeriodicExportingMetricReaderOptions.ExportIntervalMilliseconds = 1000;
+                        }
+                    );
                 configureMeter?.Invoke(b);
             }
         );
-
-        builder.UseOtlpExporter(OtlpExportProtocol.Grpc, new Uri(telemetryConfiguration.GrpcUrl));
     }
 }
